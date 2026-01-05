@@ -1,0 +1,14 @@
+[project]
+name = "ari"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.14"
+dependencies = [
+    "agentscope",
+    "mem0ai>=1.0.1",
+    "packaging>=25.0",
+    "textual>=7.0.0",
+]
+
+[tool.uv.sources]
+agentscope = { git = "https://github.com/agentscope-ai/agentscope.git" }
