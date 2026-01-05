@@ -48,6 +48,7 @@ class TaskDecomposer:
         请以 JSON 格式返回，包含以下字段：
         - "plan_name": 计划名称 (简短概括)
         - "plan_description": 计划详细描述 (主要目标)
+        - "plan_expected_outcome": 计划期望的最终结果
         - "subtasks": 子任务列表，每个子任务包含:
           - "name": 子任务名称 (简短描述)
           - "description": 子任务详细描述
@@ -90,10 +91,11 @@ class TaskDecomposer:
                     "expected_output": task_data.get("expected_output", "")
                 }
             
-            # 创建Plan（使用支持的字段）
+            # 创建Plan（使用支持的字段，包括expected_outcome）
             plan = Plan(
                 name=plan_data.get("plan_name", "任务计划"),
                 description=plan_data.get("plan_description", task_description),
+                expected_outcome=plan_data.get("plan_expected_outcome", "完成所有子任务并提供最终答案"),
                 subtasks=subtasks
             )
             
@@ -154,6 +156,7 @@ class TaskDecomposer:
         plan = Plan(
             name="默认任务计划",
             description=task_description,
+            expected_outcome="完成任务并提供最终答案",
             subtasks=subtasks
         )
         
@@ -356,6 +359,7 @@ class TaskExecutor:
         """
         context = {
             "main_goal": plan.description,  # 使用description作为主要目标
+            "plan_expected_outcome": plan.expected_outcome,  # 添加计划期望结果
             "current_subtask": subtask.description,
             "subtask_name": subtask.name,
             "dependencies": metadata.get("dependencies", []),
@@ -391,6 +395,7 @@ class TaskExecutor:
 
 任务上下文:
 - 主要目标: {context.get('main_goal', '')}
+- 计划期望结果: {context.get('plan_expected_outcome', '')}
 """
         
         # 添加依赖任务结果
@@ -425,6 +430,7 @@ class TaskExecutor:
         summary_prompt = f"""
 原始请求: {original_message.content}
 主要目标: {plan.description}
+期望结果: {plan.expected_outcome}
 
 所有子任务执行结果:
 {'\n'.join(all_results)}
