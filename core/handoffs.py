@@ -48,7 +48,6 @@ class TaskDecomposer:
         请以 JSON 格式返回，包含以下字段：
         - "plan_name": 计划名称 (简短概括)
         - "plan_description": 计划详细描述 (主要目标)
-        - "plan_expected_outcome": 计划期望的最终结果
         - "subtasks": 子任务列表，每个子任务包含:
           - "name": 子任务名称 (简短描述)
           - "description": 子任务详细描述
@@ -91,11 +90,10 @@ class TaskDecomposer:
                     "expected_output": task_data.get("expected_output", "")
                 }
             
-            # 创建Plan（使用支持的所有字段）
+            # 创建Plan（使用支持的字段）
             plan = Plan(
                 name=plan_data.get("plan_name", "任务计划"),
                 description=plan_data.get("plan_description", task_description),
-                expected_outcome=plan_data.get("plan_expected_outcome", "完成所有子任务并提供最终答案"),
                 subtasks=subtasks
             )
             
@@ -156,7 +154,6 @@ class TaskDecomposer:
         plan = Plan(
             name="默认任务计划",
             description=task_description,
-            expected_outcome="完成所有子任务并提供最终答案",
             subtasks=subtasks
         )
         
@@ -428,7 +425,6 @@ class TaskExecutor:
         summary_prompt = f"""
 原始请求: {original_message.content}
 主要目标: {plan.description}
-期望最终结果: {plan.expected_outcome}
 
 所有子任务执行结果:
 {'\n'.join(all_results)}
@@ -470,7 +466,7 @@ async def handle_complex_task(parent_agent: AriAgent, message: Msg) -> Msg:
         content=f"任务分解完成，共 {len(plan.subtasks)} 个子任务",
         role="system"
     )
-    await self.parent_agent.memory.add(decomposition_log)
+    await parent_agent.memory.add(decomposition_log)
     
     # 执行计划
     final_response = await executor.execute_plan(plan, metadata_dict, message)
@@ -529,7 +525,7 @@ async def delegate_task_to_sub_agent(
         content=f"委派任务给 {sub_agent.name}: {task_message.content}",
         role="system"
     )
-    await self.parent_agent.memory.add(delegation_log)
+    await parent_agent.memory.add(delegation_log)
     
     response = await sub_agent(task_message)
     
@@ -538,6 +534,6 @@ async def delegate_task_to_sub_agent(
         content=f"完成任务: {response.content}",
         role="system"
     )
-    await self.parent_agent.memory.add(completion_log)
+    await parent_agent.memory.add(completion_log)
     
     return response

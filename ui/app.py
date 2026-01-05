@@ -342,8 +342,14 @@ class AriApp(App):
         event.input.value = ""  # 清空输入框
         
         # 显示用户消息
-        user_msg = Text.from_markup(f"[bold green]👤 用户:[/bold green] {user_input}")
-        self.query_one("#result-output", ResultOutput).write(user_msg)
+        try:
+            user_msg = Text.from_markup(f"[bold green]👤 用户:[/bold green] {user_input}")
+            result_output = self.query_one("#result-output", ResultOutput)
+            result_output.write(user_msg)
+            # 确保自动滚动到底部
+            result_output.scroll_end(animate=False)
+        except Exception as e:
+            self.post_message(SystemNotification(f"显示用户消息失败: {str(e)}", "error"))
         
         # 开始处理
         self.is_processing = True
@@ -367,12 +373,27 @@ class AriApp(App):
             # 处理消息（这将触发完整的Handoffs工作流）
             response = await self.ari_agent(user_msg)
             
+            # 提取响应文本 - 处理AgentScope的响应格式
+            response_text = ""
+            if isinstance(response.content, list):
+                # AgentScope返回的是消息列表
+                text_parts = []
+                for item in response.content:
+                    if isinstance(item, dict) and item.get('type') == 'text':
+                        text_parts.append(item.get('text', ''))
+                    elif isinstance(item, str):
+                        text_parts.append(item)
+                response_text = "\n".join(text_parts)
+            else:
+                # 直接是字符串
+                response_text = str(response.content)
+            
             # 显示响应
-            if isinstance(response.content, str):
+            if response_text:
                 # 检查是否包含Markdown或代码
-                if "```" in response.content:
+                if "```" in response_text:
                     # 包含代码块，使用Syntax高亮
-                    lines = response.content.split('\n')
+                    lines = response_text.split('\n')
                     code_blocks = []
                     current_block = []
                     in_code_block = False
@@ -403,22 +424,31 @@ class AriApp(App):
                     result_output = self.query_one("#result-output", ResultOutput)
                     for block in code_blocks:
                         result_output.write(block)
+                    result_output.scroll_end(animate=False)
                 else:
                     # 普通文本，检查是否为Markdown
                     try:
-                        markdown_content = Markdown(response.content)
-                        self.query_one("#result-output", ResultOutput).write(markdown_content)
+                        markdown_content = Markdown(response_text)
+                        result_output = self.query_one("#result-output", ResultOutput)
+                        result_output.write(markdown_content)
+                        result_output.scroll_end(animate=False)
                     except:
                         # 纯文本
-                        ai_msg = Text.from_markup(f"[bold blue]🤖 Ari:[/bold blue] {response.content}")
-                        self.query_one("#result-output", ResultOutput).write(ai_msg)
+                        ai_msg = Text.from_markup(f"[bold blue]🤖 Ari:[/bold blue] {response_text}")
+                        result_output = self.query_one("#result-output", ResultOutput)
+                        result_output.write(ai_msg)
+                        result_output.scroll_end(animate=False)
             else:
-                ai_msg = Text.from_markup(f"[bold blue]🤖 Ari:[/bold blue] {str(response.content)}")
-                self.query_one("#result-output", ResultOutput).write(ai_msg)
+                ai_msg = Text.from_markup(f"[bold blue]🤖 Ari:[/bold blue] 无响应内容")
+                result_output = self.query_one("#result-output", ResultOutput)
+                result_output.write(ai_msg)
+                result_output.scroll_end(animate=False)
                 
         except Exception as e:
             error_msg = Text.from_markup(f"[bold red]❌ 错误:[/bold red] {str(e)}")
-            self.query_one("#result-output", ResultOutput).write(error_msg)
+            result_output = self.query_one("#result-output", ResultOutput)
+            result_output.write(error_msg)
+            result_output.scroll_end(animate=False)
             self.post_message(SystemNotification(f"处理消息时出错: {str(e)}", "error"))
         finally:
             # 重置思考状态
