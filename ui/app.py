@@ -6,6 +6,7 @@ Ari 终端用户界面主应用模块。
 
 import asyncio
 import os
+import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -96,7 +97,7 @@ class SystemMessageLog(RichLog):
     """系统消息日志"""
     
     def __init__(self, **kwargs) -> None:
-        super().__init__(wrap=True, markup=True, highlight=True, auto_scroll=True, max_lines=10, **kwargs)
+        super().__init__(wrap=True, markup=True, highlight=True, auto_scroll=True, max_lines=50, **kwargs)
         self.can_focus = False
 
 
@@ -143,6 +144,55 @@ class UserInput(Input):
                 super().action_delete_left()
 
 
+def format_message_log(msg, prefix=""):
+    """格式化消息结构日志用于UI显示"""
+    try:
+        log_lines = []
+        log_lines.append(f"=== {prefix} MESSAGE LOG ===")
+        
+        if isinstance(msg, Msg):
+            log_lines.append(f"Type: Msg")
+            log_lines.append(f"Name: {msg.name}")
+            log_lines.append(f"Role: {msg.role}")
+            log_lines.append(f"Content Type: {type(msg.content).__name__}")
+            
+            if isinstance(msg.content, list):
+                log_lines.append("Content (list):")
+                for i, item in enumerate(msg.content[:3]):  # 只显示前3项
+                    if isinstance(item, dict):
+                        log_lines.append(f"  [{i}] Dict with keys: {list(item.keys())}")
+                        if 'text' in item:
+                            preview = str(item['text'])[:100]
+                            log_lines.append(f"      Text preview: {preview}")
+                    else:
+                        preview = str(item)[:100]
+                        log_lines.append(f"  [{i}] {type(item).__name__}: {preview}")
+                if len(msg.content) > 3:
+                    log_lines.append(f"  ... and {len(msg.content) - 3} more items")
+            else:
+                content_preview = str(msg.content)[:200]
+                log_lines.append(f"Content: {content_preview}")
+                
+        elif isinstance(msg, dict):
+            log_lines.append(f"Type: dict")
+            log_lines.append(f"Keys: {list(msg.keys())}")
+            for k, v in list(msg.items())[:3]:
+                preview = str(v)[:100]
+                log_lines.append(f"  {k}: {preview}")
+            if len(msg) > 3:
+                log_lines.append(f"  ... and {len(msg) - 3} more keys")
+        else:
+            log_lines.append(f"Type: {type(msg).__name__}")
+            preview = str(msg)[:200]
+            log_lines.append(f"Value: {preview}")
+        
+        log_lines.append("=" * 50)
+        return "\n".join(log_lines)
+        
+    except Exception as e:
+        return f"Error formatting message log: {e}"
+
+
 class AriApp(App):
     """Ari 主应用程序"""
     
@@ -150,7 +200,7 @@ class AriApp(App):
     Screen {
         layout: grid;
         grid-size: 12;
-        grid-rows: 3 1fr 10 8 8 5;
+        grid-rows: 3 1fr 10 12 8 5;
         grid-gutter: 1;
         background: $surface;
     }
@@ -188,7 +238,7 @@ class AriApp(App):
     
     #system-messages {
         column-span: 12;
-        height: 8;
+        height: 12;
         background: $surface-darken-1;
         border: round $warning;
         padding: 1;
@@ -271,6 +321,7 @@ class AriApp(App):
     BINDINGS = [
         Binding("ctrl+c", "interrupt", "中断"),
         Binding("ctrl+q", "quit", "退出"),
+        Binding("ctrl+l", "clear_logs", "清空日志"),
     ]
     
     def __init__(self) -> None:
@@ -278,6 +329,9 @@ class AriApp(App):
         self.ari_agent: Optional[AriAgent] = None
         self.current_tasks: Dict[str, Dict[str, Any]] = {}
         self.is_processing = False
+        # 确保logs目录存在
+        os.makedirs("logs", exist_ok=True)
+        self.log_file_path = "logs/debug_log.log"
     
     def compose(self) -> ComposeResult:
         """构建UI组件"""
@@ -317,6 +371,9 @@ class AriApp(App):
             "[dim]请输入您的请求，Ari将为您提供智能协助...[/dim]"
         )
         self.query_one("#result-output", ResultOutput).write(welcome_msg)
+        
+        # 记录初始化日志到系统消息区
+        self._log_to_system("ARI APP INITIALIZED", "Ari应用程序已成功启动")
     
     async def initialize_agent(self) -> None:
         """初始化Ari Agent"""
@@ -325,9 +382,49 @@ class AriApp(App):
             self.ari_agent = AriAgent()
             # post_message 是同步方法，不需要 await
             self.post_message(SystemNotification("Ari Agent 初始化成功", "success"))
+            self._log_to_system("AGENT INITIALIZED", "Ari Agent 已成功初始化")
         except Exception as e:
             # post_message 是同步方法，不需要 await
             self.post_message(SystemNotification(f"Ari Agent 初始化失败: {str(e)}", "error"))
+            self._log_to_system("AGENT INIT ERROR", f"初始化失败: {str(e)}")
+    
+    def _write_log_to_file(self, title: str, message: str):
+        """将日志写入文件"""
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            log_entry = f"[{timestamp}] 📋 {title}\n{message}\n{'='*50}\n"
+            
+            # 使用追加模式写入文件
+            with open(self.log_file_path, "a", encoding="utf-8") as f:
+                f.write(log_entry)
+        except Exception as e:
+            # 如果文件写入失败，至少记录到UI
+            error_msg = f"Failed to write to log file: {str(e)}"
+            print(error_msg)  # 这会在Textual后台输出
+    
+    def _log_to_system(self, title: str, message: str):
+        """将日志消息发送到系统消息区域并写入文件"""
+        # 写入文件
+        self._write_log_to_file(title, message)
+        
+        # 显示在UI中
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        log_entry = Text.from_markup(
+            f"[yellow][{timestamp}] 📋 {title}[/yellow]\n[dim]{message}[/dim]"
+        )
+        system_log = self.query_one("#system-log", SystemMessageLog)
+        system_log.write(log_entry)
+    
+    def _log_message_structure(self, msg, prefix: str):
+        """将消息结构日志发送到系统消息区域并写入文件"""
+        formatted_log = format_message_log(msg, prefix)
+        
+        # 写入文件
+        self._write_log_to_file(f"{prefix} MESSAGE LOG", formatted_log)
+        
+        # 显示在UI中
+        system_log = self.query_one("#system-log", SystemMessageLog)
+        system_log.write(Text(formatted_log))
     
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         """处理用户输入提交"""
@@ -341,15 +438,21 @@ class AriApp(App):
         user_input = event.value
         event.input.value = ""  # 清空输入框
         
+        # 记录用户输入日志
+        self._log_to_system("USER INPUT RECEIVED", f"Input: '{user_input}' (length: {len(user_input)})")
+        
         # 显示用户消息
         try:
             user_msg = Text.from_markup(f"[bold green]👤 用户:[/bold green] {user_input}")
             result_output = self.query_one("#result-output", ResultOutput)
             result_output.write(user_msg)
-            # 确保自动滚动到底部
             result_output.scroll_end(animate=False)
+            
+            self._log_to_system("USER MESSAGE DISPLAYED", "用户消息已成功显示在结果区域")
+            
         except Exception as e:
             self.post_message(SystemNotification(f"显示用户消息失败: {str(e)}", "error"))
+            self._log_to_system("USER MESSAGE DISPLAY ERROR", f"显示失败: {str(e)}")
         
         # 开始处理
         self.is_processing = True
@@ -360,11 +463,15 @@ class AriApp(App):
         """处理用户消息"""
         if not self.ari_agent:
             self.post_message(SystemNotification("Agent未初始化", "error"))
+            self._log_to_system("PROCESS ERROR", "Agent未初始化，无法处理消息")
             return
         
         try:
             # 创建消息对象
             user_msg = Msg(name="user", content=message, role="user")
+            
+            # 记录发送给Agent的消息
+            self._log_message_structure(user_msg, "SENT TO AGENT")
             
             # 更新思考状态
             thinking_display = self.query_one("#thinking-display", ThinkingDisplay)
@@ -372,6 +479,9 @@ class AriApp(App):
             
             # 处理消息（这将触发完整的Handoffs工作流）
             response = await self.ari_agent(user_msg)
+            
+            # 记录从Agent收到的响应
+            self._log_message_structure(response, "RECEIVED FROM AGENT")
             
             # 提取响应文本 - 处理AgentScope的响应格式
             response_text = ""
@@ -387,6 +497,9 @@ class AriApp(App):
             else:
                 # 直接是字符串
                 response_text = str(response.content)
+            
+            # 记录提取的文本
+            self._log_to_system("EXTRACTED RESPONSE TEXT", f"Length: {len(response_text)}, Preview: {response_text[:100]}")
             
             # 显示响应
             if response_text:
@@ -425,6 +538,9 @@ class AriApp(App):
                     for block in code_blocks:
                         result_output.write(block)
                     result_output.scroll_end(animate=False)
+                    
+                    self._log_to_system("CODE BLOCK RESPONSE DISPLAYED", "代码块响应已成功显示")
+                    
                 else:
                     # 普通文本，检查是否为Markdown
                     try:
@@ -432,17 +548,24 @@ class AriApp(App):
                         result_output = self.query_one("#result-output", ResultOutput)
                         result_output.write(markdown_content)
                         result_output.scroll_end(animate=False)
-                    except:
+                        
+                        self._log_to_system("MARKDOWN RESPONSE DISPLAYED", "Markdown响应已成功显示")
+                        
+                    except Exception as md_error:
                         # 纯文本
                         ai_msg = Text.from_markup(f"[bold blue]🤖 Ari:[/bold blue] {response_text}")
                         result_output = self.query_one("#result-output", ResultOutput)
                         result_output.write(ai_msg)
                         result_output.scroll_end(animate=False)
+                        
+                        self._log_to_system("PLAIN TEXT RESPONSE DISPLAYED", f"纯文本响应已显示. Markdown error: {md_error}")
             else:
                 ai_msg = Text.from_markup(f"[bold blue]🤖 Ari:[/bold blue] 无响应内容")
                 result_output = self.query_one("#result-output", ResultOutput)
                 result_output.write(ai_msg)
                 result_output.scroll_end(animate=False)
+                
+                self._log_to_system("EMPTY RESPONSE HANDLED", "收到空响应，显示默认消息")
                 
         except Exception as e:
             error_msg = Text.from_markup(f"[bold red]❌ 错误:[/bold red] {str(e)}")
@@ -450,22 +573,25 @@ class AriApp(App):
             result_output.write(error_msg)
             result_output.scroll_end(animate=False)
             self.post_message(SystemNotification(f"处理消息时出错: {str(e)}", "error"))
+            
+            self._log_to_system("PROCESSING ERROR", f"异常: {str(e)}")
+            import traceback
+            self._log_to_system("TRACEBACK", f"{traceback.format_exc()}")
         finally:
             # 重置思考状态
             thinking_display = self.query_one("#thinking-display", ThinkingDisplay)
             thinking_display.thinking_content = ""
+            
+            self._log_to_system("MESSAGE PROCESSING COMPLETED", "消息处理流程已完成")
     
     async def on_agent_message(self, event: AgentMessage) -> None:
         """处理Agent消息事件"""
-        # 这里可以添加更详细的Agent内部消息处理
         pass
     
     async def on_task_update(self, event: TaskUpdate) -> None:
         """处理任务状态更新"""
-        # 更新任务状态表
         task_table = self.query_one("#task-table", TaskStatusTable)
         
-        # 获取状态图标和样式
         status_icons = {
             "pending": "⏳",
             "running": "🔄", 
@@ -474,16 +600,13 @@ class AriApp(App):
         }
         status_icon = status_icons.get(event.status, "❓")
         
-        # 更新或添加任务行
         if event.task_id in self.current_tasks:
-            # 更新现有任务
             row_key = f"task_{event.task_id}"
             task_table.update_cell(row_key, "状态", status_icon)
             task_table.update_cell(row_key, "任务", event.task_id)
             task_table.update_cell(row_key, "描述", event.description)
             task_table.update_cell(row_key, "进度", event.status)
         else:
-            # 添加新任务
             row_key = f"task_{event.task_id}"
             task_table.add_row(
                 status_icon,
@@ -519,8 +642,13 @@ class AriApp(App):
         """中断当前操作"""
         if self.is_processing:
             self.is_processing = False
-            # 使用 call_later 而不是 create_task
             self.call_later(self.post_message, SystemNotification("操作已中断", "warning"))
+    
+    def action_clear_logs(self) -> None:
+        """清空系统日志"""
+        system_log = self.query_one("#system-log", SystemMessageLog)
+        system_log.clear()
+        self.post_message(SystemNotification("系统日志已清空", "info"))
     
     def action_quit(self) -> None:
         """退出应用"""
