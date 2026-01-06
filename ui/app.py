@@ -193,6 +193,51 @@ def format_message_log(msg, prefix=""):
         return f"Error formatting message log: {e}"
 
 
+def extract_ai_response_text(response: Msg) -> str:
+    """
+    从AgentScope响应中提取真正的AI回复文本，过滤掉系统日志。
+    
+    Args:
+        response: AgentScope的Msg响应对象
+        
+    Returns:
+        str: 提取的纯文本回复
+    """
+    content = response.content
+    
+    # 如果content是字符串，直接返回
+    if isinstance(content, str):
+        return content.strip()
+    
+    # 如果content是列表，需要仔细解析
+    if isinstance(content, list):
+        text_parts = []
+        for item in content:
+            # 处理字典类型的项目（可能是OpenAI格式的消息）
+            if isinstance(item, dict):
+                # 优先检查'text'字段
+                if 'text' in item:
+                    text_parts.append(str(item['text']))
+                # 检查'content'字段
+                elif 'content' in item:
+                    content_val = item['content']
+                    if isinstance(content_val, str):
+                        text_parts.append(content_val)
+                    elif isinstance(content_val, list):
+                        # 处理content为列表的情况（如多模态消息）
+                        for sub_item in content_val:
+                            if isinstance(sub_item, dict) and sub_item.get('type') == 'text':
+                                text_parts.append(sub_item.get('text', ''))
+            # 处理字符串类型的项目
+            elif isinstance(item, str):
+                text_parts.append(item)
+        
+        return "\n".join(text_parts).strip()
+    
+    # 其他类型转换为字符串
+    return str(content).strip()
+
+
 class AriApp(App):
     """Ari 主应用程序"""
 
@@ -483,20 +528,8 @@ class AriApp(App):
             # 记录从Agent收到的响应
             self._log_message_structure(response, "RECEIVED FROM AGENT")
 
-            # 提取响应文本 - 处理AgentScope的响应格式
-            response_text = ""
-            if isinstance(response.content, list):
-                # AgentScope返回的是消息列表
-                text_parts = []
-                for item in response.content:
-                    if isinstance(item, dict) and item.get('type') == 'text':
-                        text_parts.append(item.get('text', ''))
-                    elif isinstance(item, str):
-                        text_parts.append(item)
-                response_text = "\n".join(text_parts)
-            else:
-                # 直接是字符串
-                response_text = str(response.content)
+            # 提取真正的AI回复文本，过滤掉系统日志
+            response_text = extract_ai_response_text(response)
 
             # 记录提取的文本
             self._log_to_system("EXTRACTED RESPONSE TEXT", f"Length: {len(response_text)}, Preview: {response_text[:100]}")

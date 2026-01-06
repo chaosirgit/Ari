@@ -5,17 +5,21 @@ Ari 主智能体实现模块。
 """
 
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, AsyncGenerator, Dict
 from dotenv import load_dotenv
+import asyncio
 
 from agentscope.agent import ReActAgent
-from agentscope.message import Msg
+from agentscope.message import Msg, TextBlock
 from agentscope.model import OpenAIChatModel
 from agentscope.formatter import OpenAIChatFormatter
 from agentscope.tool import Toolkit  # 修正导入
 from agentscope.memory import InMemoryMemory, Mem0LongTermMemory
 from agentscope.embedding import OpenAITextEmbedding,FileEmbeddingCache
 from mem0.vector_stores.configs import VectorStoreConfig
+
+from core.lib.stream_agnet_lib import StreamingReActAgent
+
 # 加载环境变量
 load_dotenv()
 
@@ -34,7 +38,7 @@ MEMORY_PATH = os.getenv("MEMORY_PATH", "./memory/vector_store")
 EMBEDDING_CACHE_DIR = os.getenv("EMBEDDING_CACHE_DIR", "./memory/embedding_cache")
 
 
-class AriAgent(ReActAgent):
+class AriAgent(StreamingReActAgent):
     """
     Ari 主智能体类。
     
@@ -100,7 +104,7 @@ class AriAgent(ReActAgent):
             toolkit=toolkit,
             memory=memory,
             long_term_memory=long_term_memory,
-            long_term_memory_mode="static_control",
+            long_term_memory_mode="agent_control",
             **kwargs,
         )
     
@@ -198,6 +202,6 @@ class AriAgent(ReActAgent):
             response = await handle_complex_task(self, message)
         
         # 记录响应
-        await self.memory.add(response)
-        
+        await self.memory.add(response.final_msg)
+
         return response

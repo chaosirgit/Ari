@@ -5,6 +5,7 @@ description = "Add your description here"
 requires-python = ">=3.14"
 dependencies = [
     "agentscope",
+    "asyncio>=4.0.0",
     "mem0ai>=1.0.1",
     "packaging>=25.0",
     "textual>=7.0.0",
