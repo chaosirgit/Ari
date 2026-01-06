@@ -11,14 +11,14 @@ import asyncio
 
 from agentscope.agent import ReActAgent
 from agentscope.message import Msg, TextBlock
-from agentscope.model import OpenAIChatModel
+from agentscope.model import OpenAIChatModel, DashScopeChatModel
 from agentscope.formatter import OpenAIChatFormatter
 from agentscope.tool import Toolkit  # 修正导入
 from agentscope.memory import InMemoryMemory, Mem0LongTermMemory
 from agentscope.embedding import OpenAITextEmbedding,FileEmbeddingCache
 from mem0.vector_stores.configs import VectorStoreConfig
 
-from core.lib.stream_agnet_lib import StreamingReActAgent
+from core.lib.stream_agnet_lib import StreamingReActAgent, StreamingResponse
 
 # 加载环境变量
 load_dotenv()
@@ -176,32 +176,20 @@ class AriAgent(StreamingReActAgent):
         else:
             # 较长的消息通常包含复杂任务
             return "complex_task"
-    
-    async def __call__(self, message: Msg) -> Msg:
+
+    async def __call__(self, message: Msg) -> StreamingResponse:
         """
-        处理用户消息的主入口（重写父类的 __call__ 方法）。
-        
-        Args:
-            message: 用户消息
-            
-        Returns:
-            Msg: 响应消息
+        处理用户消息的主入口。
         """
-        # 记录收到的消息
         await self.memory.add(message)
-        
-        # 分析任务类型
+
         task_type = await self.analyze_task_type(message)
-        
+
         if task_type == "chat":
-            # 直接处理聊天消息
             response = await super().__call__(message)
         else:
-            # 复杂任务，使用完整的 Handoffs 系统
             from .handoffs import handle_complex_task
             response = await handle_complex_task(self, message)
-        
-        # 记录响应
-        await self.memory.add(response.final_msg)
 
+        await self.memory.add(response.final_msg)
         return response

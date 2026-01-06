@@ -8,13 +8,14 @@ import os
 import json
 from typing import Any, Dict, List, Optional, Tuple
 from agentscope.agent import ReActAgent
-from agentscope.message import Msg
+from agentscope.message import Msg, TextBlock
 from agentscope.model import OpenAIChatModel
 from agentscope.formatter import OpenAIChatFormatter
 from agentscope.tool import Toolkit
 from agentscope.memory import InMemoryMemory
 from agentscope.plan import Plan, SubTask
 
+import utils
 from .ari_agent import AriAgent
 
 
@@ -27,8 +28,20 @@ class TaskDecomposer:
     
     def __init__(self, parent_agent: AriAgent):
         self.parent_agent = parent_agent
+        # 创建非流式模型用于任务分解（避免流式响应处理复杂性）
+        from agentscope.model import OpenAIChatModel
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        self.decomposition_model = OpenAIChatModel(
+            api_key=os.getenv("LLM_API_KEY"),
+            client_kwargs={"base_url": os.getenv("LLM_BASE_URL")},
+            model_name=os.getenv("LLM_MODEL_NAME", "gpt-4o"),
+            stream=False,
+        )
     
-    async def decompose_task(self, task_description: str) -> Tuple[Plan, Dict[str, Dict[str, Any]]]:
+    async def decompose_task(self, task_description: str) -> Tuple[Plan | None, Dict[str, Dict[str, Any]] | None]:
         """
         将复杂任务分解为结构化的计划。
         
@@ -57,18 +70,22 @@ class TaskDecomposer:
           - "dependencies": 依赖的子任务名称列表 (可选)
         
         确保子任务之间有合理的依赖关系，并且能够按顺序执行。
+        
+        ⚠️ 重要：请直接返回纯JSON，不要使用Markdown代码块包裹（不要用```json```）。
         """
+
+        decomposition_msg = [
+            {"role": "user", "content": decomposition_prompt, "name": "system"}
+        ]
         
-        decomposition_msg = Msg(
-            name="system",
-            content=decomposition_prompt,
-            role="user"
-        )
-        
-        # 使用父Agent的模型来生成分解结果
-        response = await self.parent_agent.model([decomposition_msg])
-        decomposition_result = response.text
-        
+        # 使用非流式模型来生成分解结果
+        response = await self.decomposition_model(decomposition_msg)
+        print("规划LLM 返回结果:",response.content)
+        decomposition_result = ""
+        for block in response.content:
+            if isinstance(block, dict) and block.get('type') == 'text':
+                decomposition_result += block.get('text', '')
+        print("处理字符串后的结果: ",decomposition_result)
         try:
             # 解析JSON结果
             plan_data = json.loads(decomposition_result)
@@ -103,8 +120,10 @@ class TaskDecomposer:
             
         except (json.JSONDecodeError, KeyError) as e:
             # 如果解析失败，创建一个简单的默认计划
-            print(f"任务分解失败: {e}, 使用默认分解")
-            return self._create_default_plan(task_description)
+            print(f"任务分解失败: {e}")
+            # return self._create_default_plan(task_description)
+            # return self._create_plan_fail(task_description)
+            return None, None
     
     def _create_default_plan(self, task_description: str) -> Tuple[Plan, Dict[str, Dict[str, Any]]]:
         """
@@ -124,7 +143,7 @@ class TaskDecomposer:
                 expected_outcome="任务分析报告"
             ),
             SubTask(
-                name="执行核心任务", 
+                name="执行核心任务",
                 description=f"执行核心任务: {task_description}",
                 expected_outcome="任务执行结果"
             ),
@@ -172,6 +191,18 @@ class SubAgentFactory:
     
     def __init__(self, parent_agent: AriAgent):
         self.parent_agent = parent_agent
+        # 创建非流式模型用于任务分解（避免流式响应处理复杂性）
+        from agentscope.model import OpenAIChatModel
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        self.decomposition_model = OpenAIChatModel(
+            api_key=os.getenv("LLM_API_KEY"),
+            client_kwargs={"base_url": os.getenv("LLM_BASE_URL")},
+            model_name=os.getenv("LLM_MODEL_NAME", "gpt-4o"),
+            stream=False,
+        )
     
     async def create_agent_for_task(
         self, 
@@ -230,6 +261,18 @@ class TaskExecutor:
     
     def __init__(self, parent_agent: AriAgent):
         self.parent_agent = parent_agent
+        # 创建非流式模型用于任务分解（避免流式响应处理复杂性）
+        from agentscope.model import OpenAIChatModel
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        self.decomposition_model = OpenAIChatModel(
+            api_key=os.getenv("LLM_API_KEY"),
+            client_kwargs={"base_url": os.getenv("LLM_BASE_URL")},
+            model_name=os.getenv("LLM_MODEL_NAME", "gpt-4o"),
+            stream=False,
+        )
         self.sub_agent_factory = SubAgentFactory(parent_agent)
         self.task_decomposer = TaskDecomposer(parent_agent)
         self.execution_results: Dict[str, Any] = {}
@@ -448,37 +491,6 @@ class TaskExecutor:
         return final_response
 
 
-async def handle_complex_task(parent_agent: AriAgent, message: Msg) -> Msg:
-    """
-    处理复杂任务的主函数。
-    
-    Args:
-        parent_agent: Ari 主 Agent
-        message: 用户消息
-        
-    Returns:
-        Msg: 响应消息
-    """
-    # 创建任务执行器
-    executor = TaskExecutor(parent_agent)
-    
-    # 分解任务
-    task_decomposer = TaskDecomposer(parent_agent)
-    plan, metadata_dict = await task_decomposer.decompose_task(message.content)
-    
-    # 记录任务分解结果
-    decomposition_log = Msg(
-        name=parent_agent.name,
-        content=f"任务分解完成，共 {len(plan.subtasks)} 个子任务",
-        role="system"
-    )
-    await parent_agent.memory.add(decomposition_log)
-    
-    # 执行计划
-    final_response = await executor.execute_plan(plan, metadata_dict, message)
-    
-    return final_response
-
 
 async def create_sub_agent(
     parent_agent: AriAgent,
@@ -543,3 +555,38 @@ async def delegate_task_to_sub_agent(
     await parent_agent.memory.add(completion_log)
     
     return response
+
+from core.lib.stream_agnet_lib import StreamingResponse
+
+async def handle_complex_task(parent_agent: AriAgent, message: Msg) -> StreamingResponse:
+    """
+    处理复杂任务的主函数。
+
+    Args:
+        parent_agent: Ari 主 Agent
+        message: 用户消息
+
+    Returns:
+        StreamingResponse: 流式响应对象
+    """
+    # 创建任务执行器
+    executor = TaskExecutor(parent_agent)
+
+    # 分解任务
+    task_decomposer = TaskDecomposer(parent_agent)
+    plan, metadata_dict = await task_decomposer.decompose_task(message.content)
+    if plan is None:
+        return StreamingResponse(final_msg=Msg(role="assistant",content="任务规划失败",name="Ari"), _agent=parent_agent)
+    # 记录任务分解结果
+    decomposition_log = Msg(
+        name=parent_agent.name,
+        content=f"任务分解完成，共 {len(plan.subtasks)} 个子任务",
+        role="system"
+    )
+    await parent_agent.memory.add(decomposition_log)
+
+    # 执行计划
+    final_msg = await executor.execute_plan(plan, metadata_dict, message)
+
+    # 返回 StreamingResponse
+    return StreamingResponse(final_msg=final_msg, _agent=parent_agent)

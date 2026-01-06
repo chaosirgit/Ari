@@ -37,7 +37,7 @@ async def display_text_stream(text_stream):
         print(text_chunk, end="", flush=True)
     print()  # 回复结束后换行
 
-async def main():
+async def test_terminal():
     """主函数"""
     print("🚀 AriAgent 测试启动")
     print("💡 输入 'quit' 或 'exit' 退出程序")
@@ -119,6 +119,46 @@ async def main():
         except Exception as e:
             print(f"\n❌ 发生错误: {e}")
             print("请检查你的网络连接、API密钥等配置\n")
+
+async def main():
+    # 创建消息对象
+    user_msg = Msg(
+        name="user",
+        content="帮我规划一下做蛋炒饭的步骤?",
+        role="user"
+    )
+    ari = AriAgent()
+    # 调用 AriAgent
+    response = await ari(user_msg)
+
+    # 并行显示不同类型的流式内容
+    # 注意：实际使用中可能需要按顺序显示，这里为了演示所有功能
+
+    # 1. 显示思考过程（如果有）
+    print("🔍 开始读取思考流...")
+    thinking_task = asyncio.create_task(display_thinking_stream(response.get_thinking_stream()))
+    print("\n✅ 思考流结束\n")
+
+    # TODO 任务名称,描述,状态显示 如果有规划任务
+
+
+    # 2. 显示工具调用（如果有）
+    print("🔍 开始读取工具流...")
+    tool_task = asyncio.create_task(display_tool_stream(response.get_tool_stream()))
+    print("✅ 工具流结束\n")
+
+
+    # 等待思考和工具调用完成
+    await asyncio.gather(thinking_task, tool_task)
+
+    # 3. 显示最终文本回复
+    print("🔍 最终文本...")
+
+    await display_text_stream(response.get_text_stream())
+    print("\n✅ 最终文本\n")
+
+
+    print("\n✅ 测试完成")
 
 
 if __name__ == "__main__":
