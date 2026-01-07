@@ -4,20 +4,28 @@ Utility functions for the Ari project.
 import json
 from typing import Any
 
+from agentscope.message import Msg
+from agentscope.tool import ToolResponse
+
 
 def extract_json_from_response(response_content: Any) -> str:
     """
     从各种格式的响应中提取 JSON 字符串。
 
     Args:
-        response_content: LLM 响应内容（可能是 Sequence, list, dict, str）
+        response_content: LLM 响应内容（可能是 Sequence, list, dict, str, ToolResponse 等）
 
     Returns:
         str: 清洗后的 JSON 字符串
     """
     text_content = ""
 
-    # 1. 提取文本内容
+    # 1. 处理 ToolResponse 对象
+    if hasattr(response_content, 'content') and hasattr(response_content, 'metadata'):
+        # 这很可能是 ToolResponse 对象
+        response_content = response_content.content
+
+    # 2. 提取文本内容
     if isinstance(response_content, (list, tuple)):
         # 处理序列格式的响应（Sequence[TextBlock | ...]）
         for item in response_content:
@@ -32,16 +40,16 @@ def extract_json_from_response(response_content: Any) -> str:
             text_content = response_content.get('text', '')
         else:
             # 如果已经是字典，可能就是 JSON 数据
-            return json.dumps(response_content)
+            return json.dumps(response_content, ensure_ascii=False, indent=2)
     elif isinstance(response_content, str):
         text_content = response_content
     else:
         text_content = str(response_content)
 
-    # 2. 清洗文本
+    # 3. 清洗文本
     text_content = text_content.strip()
 
-    # 3. 移除 Markdown 代码块标记
+    # 4. 移除 Markdown 代码块标记
     if text_content.startswith('```'):
         lines = text_content.split('\n')
         # 移除第一行（```json 或 ```）
@@ -53,4 +61,3 @@ def extract_json_from_response(response_content: Any) -> str:
         text_content = '\n'.join(lines)
 
     return text_content.strip()
-
