@@ -10,6 +10,7 @@ from agentscope.model import OpenAIChatModel
 from agentscope.tool import ToolResponse, Toolkit, execute_python_code, execute_shell_command
 
 from config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_NAME
+from core.lib.my_base_agent_lib import MyBaseReActAgent
 
 
 async def create_worker(
@@ -37,7 +38,7 @@ async def create_worker(
     toolkit = Toolkit()
     toolkit.register_tool_function(execute_python_code)
     toolkit.register_tool_function(execute_shell_command)
-    worker = ReActAgent(
+    worker = MyBaseReActAgent(
         name=agent_name,
         sys_prompt=work_prompt,
         model=OpenAIChatModel(
