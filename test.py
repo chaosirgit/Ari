@@ -30,13 +30,16 @@ async def main():
         # 主 Agent 回答
         if msg.name == PROJECT_NAME and msg.role == "assistant" and (msg.has_content_blocks("text") or msg.has_content_blocks("tool_use")):
             if msg.has_content_blocks("tool_use"):
-                print("🤖Ari:",msg.get_content_blocks("tool_use"))
+                for chunk in msg.get_content_blocks("tool_use"):
+                    if "input" in chunk:
+                        for c in chunk:
+                            if "description" in c:
+                                print("🤖Ari:",c["description"])
             else:
                 print("🤖Ari:",msg.get_content_blocks("text"))
         # 规划 Agent 完成规划
         if msg.name == "Planning" and msg.role == "assistant" and msg.has_content_blocks("text") and last:
             plan_str = utils.extract_json_from_response(msg.get_content_blocks("text"))
-            print(plan_str)
             plan = json.loads(plan_str)
             steps = plan.get("steps")
             print("📅Planning:","已完成规划")
