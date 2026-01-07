@@ -1,10 +1,121 @@
-from typing import Any
+from typing import Any, Coroutine, AsyncGenerator, Union, Tuple
 
 from agentscope.agent import ReActAgent
-from agentscope.message import Msg
 
-# 导入全局消息流管理器
-from ui.message_stream_manager import get_or_create_agent_stream
+import asyncio
+from typing import List, Set
+
+from agentscope.message import Msg, AudioBlock
+
+
+class GlobalAgentRegistry:
+    """全局 Agent 注册器"""
+    _agents: List['MyBaseReActAgent'] = []
+    _monitored_agent_ids: Set[str] = set()
+    _message_queue: asyncio.Queue = None
+    _registration_lock = asyncio.Lock()
+
+    @classmethod
+    def register_agent(cls, agent: 'MyBaseReActAgent'):
+        cls._agents.append(agent)
+        # 如果已经在监控中，立即设置队列
+        if cls._message_queue is not None:
+            cls._setup_agent_queue(agent)
+
+    @classmethod
+    def _setup_agent_queue(cls, agent: 'MyBaseReActAgent'):
+        if agent.id not in cls._monitored_agent_ids:
+            agent.set_msg_queue_enabled(True, cls._message_queue)
+            cls._monitored_agent_ids.add(agent.id)
+
+    @classmethod
+    async def stream_all_messages(
+            cls,
+            main_task: Coroutine[Any, Any, Any],
+            end_signal: str = "[END]",
+            yield_speech: bool = False,
+    ) -> AsyncGenerator[
+        Union[
+            Tuple[Msg, bool],
+            Tuple[Msg, bool, Union[AudioBlock, list[AudioBlock], None]]
+        ],
+        None,
+    ]:
+        """
+        统一获取所有已注册和未来创建的 Agent 消息。
+
+        Args:
+            main_task (`Coroutine`):
+                要执行的主协程任务。
+            end_signal (`str`, defaults to `"[END]"`):
+                结束信号字符串。
+            yield_speech (`bool`, defaults to `False`):
+                是否在生成的消息中包含语音数据。
+
+        Yields:
+            `Tuple[Msg, bool] | Tuple[Msg, bool, AudioBlock | list[AudioBlock] | None]`:
+                - msg: 消息对象
+                - last: 布尔值，指示是否为流式消息的最后一个块
+                - speech: 语音数据（仅当 yield_speech=True 时包含）
+
+        这个方法的返回类型与官方的 `stream_printing_messages` 完全一致。
+        """
+        cls._message_queue = asyncio.Queue()
+        cls._monitored_agent_ids.clear()
+
+        # 设置已有 Agent 的队列
+        for agent in cls._agents:
+            cls._setup_agent_queue(agent)
+
+        # 记录当前已监控的 Agent 数量
+        last_checked_index = len(cls._agents)
+
+        # 执行主任务
+        task = asyncio.create_task(main_task)
+
+        if task.done():
+            await cls._message_queue.put(end_signal)
+        else:
+            task.add_done_callback(lambda _: cls._message_queue.put_nowait(end_signal))
+
+        # 消息流处理
+        while True:
+            try:
+                # 短超时检查消息队列
+                msg_data = await asyncio.wait_for(cls._message_queue.get(), timeout=0.5)
+            except asyncio.TimeoutError:
+                # 检查是否有新注册的 Agent
+                async with cls._registration_lock:
+                    current_agent_count = len(cls._agents)
+                    if current_agent_count > last_checked_index:
+                        # 有新 Agent 被注册，设置它们的队列
+                        for i in range(last_checked_index, current_agent_count):
+                            new_agent = cls._agents[i]
+                            cls._setup_agent_queue(new_agent)
+                        last_checked_index = current_agent_count
+                continue
+
+            # 检查结束信号
+            if isinstance(msg_data, str) and msg_data == end_signal:
+                break
+
+            # 处理消息数据
+            if yield_speech:
+                # 返回 (msg, last, speech) 元组
+                yield msg_data  # msg_data 已经是 (msg, last, speech) 元组
+            else:
+                # 返回 (msg, last) 元组，忽略 speech
+                msg, last, _ = msg_data
+                yield msg, last
+
+        # 检查任务异常
+        exception = task.exception()
+        if exception is not None:
+            raise exception from None
+
+        # 清理
+        cls._message_queue = None
+        cls._monitored_agent_ids.clear()
 
 
 class MyBaseReActAgent(ReActAgent):
@@ -16,50 +127,5 @@ class MyBaseReActAgent(ReActAgent):
 
     def __init__(self, *args, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        # 为当前智能体初始化消息流
-        self._agent_stream = get_or_create_agent_stream(self.name)
-
-    async def reply(self, *args, **kwargs) -> Msg:
-        """
-        重写 reply 方法以捕获智能体的最终回复。
-        
-        无论是流式还是非流式调用，此方法都会在最终消息生成后被调用。
-        """
-        # 调用父类的 reply 方法获取原始回复
-        response_msg = await super().reply(*args, **kwargs)
-        
-        # 将回复内容存入该智能体的全局消息流
-        self._agent_stream["reply"].append({
-            "role": "assistant",
-            "content": response_msg.get_text_content(),
-            "timestamp": response_msg.timestamp,
-        })
-        
-        return response_msg
-
-    async def observe(self, msg: Msg | list[Msg] | None) -> None:
-        """
-        重写 observe 方法以捕获接收到的消息。
-        
-        此方法会在智能体接收到任何外部消息时被调用。
-        """
-        # 先调用父类的 observe 方法
-        await super().observe(msg)
-        
-        # TODO: 在这里可以添加逻辑来解析特定消息（如规划结果）
-        # 并更新任务状态等。目前先简单记录。
-        if isinstance(msg, list):
-            for m in msg:
-                self._agent_stream["thinking"].append({
-                    "role": m.role,
-                    "name": m.name,
-                    "content": m.get_text_content(),
-                    "timestamp": m.timestamp,
-                })
-        elif msg is not None:
-            self._agent_stream["thinking"].append({
-                "role": msg.role,
-                "name": msg.name,
-                "content": msg.get_text_content(),
-                "timestamp": msg.timestamp,
-            })
+        self.set_console_output_enabled(False)
+        GlobalAgentRegistry.register_agent(self)

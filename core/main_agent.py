@@ -100,7 +100,6 @@ class MainReActAgent(MyBaseReActAgent):
 
         # 注册创建子智能体工具
         toolkit.register_tool_function(create_worker)
-        # =======================================
 
         memory = InMemoryMemory()
         long_term_memory = self._create_long_term_memory()
@@ -116,16 +115,6 @@ class MainReActAgent(MyBaseReActAgent):
             long_term_memory_mode="agent_control",
             **kwargs,
         )
-
-        # ====== 新增：初始化全局消息流存储 ======
-        # 结构: {"main": [...], "tool": [...]}
-        # "main" 存储主Agent自身的思考和最终回复
-        # "tool" 存储所有工具调用（包括规划和子Agent）的输入、输出和内部流
-        self._message_streams: Dict[str, List[Dict]] = {
-            "main": [],
-            "tool": []
-        }
-        # =======================================
 
     def _create_long_term_memory(self) -> Mem0LongTermMemory:
         """
@@ -195,24 +184,3 @@ class MainReActAgent(MyBaseReActAgent):
         return ToolResponse(
             content=[{"type": "text", "text": planning_content}],
         )
-
-    # ===============================        )
-    # ===============================            content=[TextBlock(text=f"已规划任务: {plan}")],
-
-    # ====== 新增：捕获主Agent的回复 ======
-    async def reply(self, *args, **kwargs) -> Msg:
-        """
-        重写 reply 方法以捕获主Agent的最终回复。
-        """
-        # 调用父类的 reply 方法获取原始回复
-        response_msg = await super().reply(*args, **kwargs)
-
-        # 将回复内容存入全局消息流
-        self._message_streams["main"].append({
-            "role": "assistant",
-            "content": response_msg.get_text_content(),
-            "type": "final_reply"
-        })
-
-        return response_msg
-    # ===============================

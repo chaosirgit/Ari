@@ -1,74 +1,72 @@
 import asyncio
-import logging
+import json
+
 from agentscope.message import Msg
+
+import utils
+from config import PROJECT_NAME
+from core.lib.my_base_agent_lib import GlobalAgentRegistry
 from core.main_agent import MainReActAgent
-
-# 配置日志，抑制 AgentScope 的底层消息打印
-logging.getLogger("agentscope").setLevel(logging.WARNING)
-
-# 导入全局消息流管理器
-from ui.message_stream_manager import get_all_streams, clear_all_streams
-
-
-async def stream_printer():
-    """后台任务：持续打印新的、干净的回复消息。"""
-    printed_counts = {}  # 记录每个智能体已打印的 reply 消息数量
-
-    while True:
-        all_streams = get_all_streams()
-        has_new_message = False
-
-        for agent_name, streams in all_streams.items():
-            if agent_name not in printed_counts:
-                printed_counts[agent_name] = 0
-
-            # 只打印新的 reply 消息，并且只打印 content
-            reply_msgs = streams["reply"]
-            for i in range(printed_counts[agent_name], len(reply_msgs)):
-                msg = reply_msgs[i]
-                print(f"\n--- {agent_name} ---")
-                print(msg['content'])
-                printed_counts[agent_name] += 1
-                has_new_message = True
-
-        if not has_new_message:
-            await asyncio.sleep(0.1)
-        else:
-            await asyncio.sleep(0.05)
 
 
 async def main():
-    # 清空之前的流式消息
-    clear_all_streams()
-
+    GlobalAgentRegistry._agents.clear()
+    steps = []
     # 初始化主 Agent
     ari = MainReActAgent()
 
     # 创建用户消息对象
     user_msg = Msg(
         name="user",
-        content="帮我规划一下做蛋炒饭的步骤?",
+        content="我现在要测试一下多智能体的并行运行,你让规划Agent规划 5 个步骤, 2个有依赖,3个无依赖,比如,3个分别计算2+3,6+3,4+3,两个有依赖的计算 3 + 2 * 5",
         role="user"
     )
+    async for msg, last in GlobalAgentRegistry.stream_all_messages(
+            main_task=ari(user_msg),
+    ):
+        # 主Agent思考
+        if msg.name == PROJECT_NAME and msg.role == "assistant" and msg.has_content_blocks("thinking"):
+            print("🤔Ari:",msg.get_content_blocks("thinking"))
+        # 主 Agent 回答
+        if msg.name == PROJECT_NAME and msg.role == "assistant" and (msg.has_content_blocks("text") or msg.has_content_blocks("tool_use")):
+            if msg.has_content_blocks("tool_use"):
+                print("🤖Ari:",msg.get_content_blocks("tool_use"))
+            else:
+                print("🤖Ari:",msg.get_content_blocks("text"))
+        # 规划 Agent 完成规划
+        if msg.name == "Planning" and msg.role == "assistant" and msg.has_content_blocks("text") and last:
+            plan_str = utils.extract_json_from_response(msg.get_content_blocks("text"))
+            print(plan_str)
+            plan = json.loads(plan_str)
+            steps = plan.get("steps")
+            print("📅Planning:","已完成规划")
+            print("一共 ",len(steps)," 个步骤")
+            for p in steps:
+                print(f"{p.get("task_id")}:{p.get("task_name")}-等待开始")
+        # 子 Agent 思考
+        if msg.name.startswith("Worker_") and msg.role == "assistant" and msg.has_content_blocks("thinking"):
+            # 更新步骤状态-正在思考
+            steps[msg.metadata["task_id"]]["status"] = 1
+            print(f"🧑‍🌾{msg.name.removeprefix("Worker_")}: {msg.get_content_blocks('thinking')}")
 
-    # 启动流式打印后台任务
-    printer_task = asyncio.create_task(stream_printer())
+        # 子 Agent 回答
+        if msg.name.startswith("Worker_") and msg.role == "assistant" and msg.has_content_blocks("text"):
+            # 更新任务状态-正在回答
+            steps[msg.metadata["task_id"]]["status"] = 2
+            print(f"🧑‍🌾{msg.name.removeprefix("Worker_")}: {msg.get_content_blocks('text')}")
+            if last:
+                # 更新任务状态-执行完毕(任务完成)
+                if msg.metadata["success"]:
+                    steps[msg.metadata["task_id"]]["status"] = 3
+                # 更新任务状态-执行完毕(任务失败)
+                else:
+                    steps[msg.metadata["task_id"]]["status"] = 4
+                # 所有任务执行完毕
+                if all(p.get("status") in [3, 4] for p in steps) and steps:
+                    print("所有任务已执行,等待汇总...")
 
-    try:
-        # 将消息发送给主 Agent 并等待最终结果
-        final_result = await ari(user_msg)
-    finally:
-        # 取消后台打印任务
-        printer_task.cancel()
-        try:
-            await printer_task
-        except asyncio.CancelledError:
-            pass
-    
-    print("\n" + "="*60)
-    print("🎯 最终结果")
-    print("="*60)
-    print(final_result.get_text_content())
+        if last:
+            print()
 
 
 if __name__ == "__main__":

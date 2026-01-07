@@ -24,7 +24,7 @@ class PlanningReActAgent(MyBaseReActAgent):
         """
         初始化规划智能体。
         """
-        name = "PlanningAgent"
+        name = "Planning"
         sys_prompt = """
 你是一个专业的任务规划专家。你的唯一职责是将用户提供的复杂任务分解为一系列清晰、原子化、可执行的步骤。
 
@@ -40,23 +40,29 @@ class PlanningReActAgent(MyBaseReActAgent):
 {
     "steps": [
         {
-            "id": 1,
+            "task_id": 1,
+            "task_name": "简要名称"
             "description": "步骤一的具体描述",
-            "dependencies": []
+            "dependencies": [],
+            "status": 0
         },
         {
-            "id": 2,
+            "task_id": 2,
+            "task_name": "简要名称"
             "description": "步骤二的具体描述",
-            "dependencies": [1]
+            "dependencies": [1],
+            "status": 0
         }
     ],
     "execution_mode": "serial"
 }
 ```
 
-- `id` 必须是从1开始的连续整数。
+- `task_id` 必须是从1开始的连续整数。
+- `task_name` 为该步骤取个简单的名称。
 - `description` 应该足够详细，以便另一个智能体能独立执行该步骤。
-- `dependencies` 是一个整数列表，列出所有前置步骤的 `id`。
+- `dependencies` 是一个整数列表，列出所有前置步骤的 `task_id`。
+- `status` 始终是 0 。
 - `execution_mode` 只能是 "serial" 或 "parallel"。
 
 请直接输出这个 JSON 字符串，不要包含任何其他解释、Markdown 代码块或前缀/后缀文本。
@@ -65,7 +71,7 @@ class PlanningReActAgent(MyBaseReActAgent):
             api_key=LLM_API_KEY,
             client_kwargs={"base_url": LLM_BASE_URL},
             model_name=LLM_MODEL_NAME,
-            stream=False, # 规划过程不需要流式
+            stream=True,
         )
         formatter = OpenAIChatFormatter()
         memory = InMemoryMemory()
