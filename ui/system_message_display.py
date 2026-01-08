@@ -19,8 +19,6 @@ class SystemMessageDisplay(RichLog):
             highlight=False,
             markup=True,
         )
-        # 使用 CSS 来控制高度，而不是构造函数参数
-        self.styles.height = "10"
         self._message_timers: dict = {}
     
     def add_message(self, message: str, msg_type: str = "info", duration: float = 5.0) -> None:
