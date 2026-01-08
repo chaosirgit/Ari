@@ -5,7 +5,7 @@
 - 支持流式更新任务状态
 """
 from textual.widgets import DataTable
-from textual.reactive import reactive
+from textual.message import Message
 
 
 class TaskStatusDisplay(DataTable):
@@ -27,7 +27,10 @@ class TaskStatusDisplay(DataTable):
     def add_task(self, task_id: int, task_name: str, description: str, dependencies: list = None) -> None:
         """添加新任务"""
         dep_str = ", ".join(str(d) for d in dependencies) if dependencies else ""
-        self.add_row("⏳", str(task_id), task_name, description, dep_str, key=f"task-{task_id}")
+        row_key = f"task-{task_id}"
+        # 检查行是否已存在，避免重复添加
+        if row_key not in self.rows:
+            self.add_row("⏳", str(task_id), task_name, description, dep_str, key=row_key)
     
     def update_task_status(self, task_id: int, status: int) -> None:
         """更新任务状态
@@ -41,6 +44,15 @@ class TaskStatusDisplay(DataTable):
         }
         icon = status_icons.get(status, "❓")
         row_key = f"task-{task_id}"
+        
+        # 只有在行存在时才更新
         if row_key in self.rows:
-            current_row = self.get_row(row_key)
-            self.update_cell(row_key, "状态", icon)
+            try:
+                self.update_cell(row_key, "状态", icon)
+            except Exception as e:
+                # 记录错误但不崩溃
+                print(f"更新任务状态失败: {e}")
+        else:
+            # 如果行不存在，可能是规划还没完成就收到了更新
+            # 在这种情况下，我们可以选择忽略或者稍后重试
+            pass

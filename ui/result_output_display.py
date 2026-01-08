@@ -5,8 +5,7 @@
 - 支持多种消息类型（文本、工具调用、工具结果等）
 """
 from textual.widgets import RichLog
-from textual.reactive import reactive
-from rich.text import Text
+from textual.message import Message
 from rich.markdown import Markdown
 from rich.syntax import Syntax
 import json
@@ -23,7 +22,6 @@ class ResultOutputDisplay(RichLog):
             highlight=True,
             markup=True,
         )
-        # 使用 CSS 控制最小宽度
         self.styles.min_width = "50"
     
     def add_message(self, sender: str, content: str, msg_type: str = "text") -> None:
@@ -32,7 +30,7 @@ class ResultOutputDisplay(RichLog):
         Args:
             sender: 发送者名称
             content: 消息内容
-            msg_type: 消息类型 ("text", "thinking", "tool_use", "tool_result")
+            msg_type: 消息类型 ("text", "thinking", "tool_use", "tool_result", "error", "success", "warning")
         """
         if msg_type == "thinking":
             # 思考过程 - 使用灰色斜体
@@ -60,6 +58,21 @@ class ResultOutputDisplay(RichLog):
             formatted_content = f"[green]✅ {sender} 工具结果: {content}[/green]"
             self.write(formatted_content)
             
+        elif msg_type == "error":
+            # 错误消息 - 使用红色
+            formatted_content = f"[red]❌ {sender}: {content}[/red]"
+            self.write(formatted_content)
+            
+        elif msg_type == "success":
+            # 成功消息 - 使用绿色
+            formatted_content = f"[green]✅ {sender}: {content}[/green]"
+            self.write(formatted_content)
+            
+        elif msg_type == "warning":
+            # 警告消息 - 使用黄色
+            formatted_content = f"[yellow]⚠️ {sender}: {content}[/yellow]"
+            self.write(formatted_content)
+            
         else:
             # 普通文本消息
             # 检查是否为Markdown格式
@@ -70,21 +83,6 @@ class ResultOutputDisplay(RichLog):
             else:
                 formatted_content = f"[bold]{sender}:[/bold] {content}"
                 self.write(formatted_content)
-    
-    def add_streaming_content(self, sender: str, content: str, is_complete: bool = False) -> None:
-        """添加流式内容（覆盖式更新）"""
-        if is_complete:
-            # 完整内容，直接添加
-            self.add_message(sender, content)
-        else:
-            # 流式内容，需要特殊处理
-            # Textual 的 RichLog 不直接支持覆盖，所以我们用特殊标记
-            if hasattr(self, '_last_streaming_line'):
-                # 清除上一行（通过添加空行覆盖的视觉效果）
-                pass
-            self._last_streaming_line = content
-            formatted_content = f"[bold]{sender}:[/bold] {content}▌"
-            self.write(formatted_content)
     
     def _is_markdown_like(self, text: str) -> bool:
         """简单判断文本是否类似Markdown"""
