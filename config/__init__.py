@@ -8,7 +8,8 @@ from config.config import (
     MEMORY_PATH,
     EMBEDDING_DIMENSION,
     EMBEDDING_MODEL_NAME,
-    EMBEDDING_CACHE_DIR
+    EMBEDDING_CACHE_DIR,
+    logger
 )
 
 __all__ = [

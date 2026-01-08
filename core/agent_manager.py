@@ -12,26 +12,9 @@ from agentscope.message import Msg
 from textual.app import App
 from textual.message import Message
 
-from config import PROJECT_NAME
+from config import PROJECT_NAME,logger
 from core.lib.my_base_agent_lib import GlobalAgentRegistry
 from core.main_agent import MainReActAgent
-
-
-# 设置文件日志
-log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs")
-os.makedirs(log_dir, exist_ok=True)
-log_file = os.path.join(log_dir, "ari_debug.log")
-
-# 配置日志
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(log_file, encoding='utf-8'),
-    ]
-)
-
-logger = logging.getLogger("AriAgentManager")
 
 
 class UpdateResultMessage(Message):

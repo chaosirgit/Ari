@@ -1,7 +1,9 @@
 """
 配置加载
 """
+import logging
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -21,3 +23,17 @@ EMBEDDING_DIMENSION = int(os.getenv("EMBEDDING_DIMENSION", "1536"))
 
 MEMORY_PATH = os.getenv("MEMORY_PATH", "./memory/vector_store")
 EMBEDDING_CACHE_DIR = os.getenv("EMBEDDING_CACHE_DIR", "./memory/embedding_cache")
+
+# ========== 配置日志 ==========
+Path("logs").mkdir(exist_ok=True)
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='[%(asctime)s] [%(levelname)s] %(message)s',
+    datefmt='%H:%M:%S',
+    handlers=[
+        logging.FileHandler('logs/debug_log.log', mode='w', encoding='utf-8'),
+    ]
+)
+
+logger = logging.getLogger(__name__)
