@@ -75,12 +75,14 @@ class MainReActAgent(MyBaseReActAgent):
             *   你必须仔细分析所有子智能体的返回结果。
             *   将这些信息进行**逻辑整合、去重和优化**，形成一份连贯、完整、高质量的最终答案。
             *   最终答案应直接解决用户的原始请求，并体现出Ari作为一个高智商协作体的专业性。
+            *   使用人类口吻进行总结.
 
         ### 工作流程
         当收到一个复杂任务时，你应该：
         1.  使用 `plan_task` 工具对其进行详细分析和拆解。
-        2.  根据上述“专家委派”准则，为每个子任务调用 `create_worker` 工具。
-        3.  汇总并精炼所有结果，形成最终回复。
+        2.  当你收到 `plan_task` 工具拆解的步骤后应该根据依赖关系创建并行和串行执行的专家委派.
+        3.  根据上述“专家委派”准则，为每个子任务调用 `create_worker` 工具。
+        4.  汇总并精炼所有结果，形成最终回复。
 
         请始终以最高标准要求自己，展现出卓越的判断力和创造力。
         """
@@ -89,6 +91,10 @@ class MainReActAgent(MyBaseReActAgent):
             client_kwargs={"base_url": LLM_BASE_URL},
             model_name=LLM_MODEL_NAME,
             stream=True,
+            # 启用并行工具调用
+            generate_kwargs={
+                "parallel_tool_calls": True,
+            },
         )
         formatter = OpenAIChatFormatter()
 
