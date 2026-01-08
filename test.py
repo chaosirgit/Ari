@@ -12,6 +12,8 @@ from core.main_agent import MainReActAgent
 async def main():
     GlobalAgentRegistry._agents.clear()
     steps = []
+    planning_completed = False
+
     # 初始化主 Agent
     ari = MainReActAgent()
 
@@ -22,59 +24,109 @@ async def main():
         role="user"
     )
 
+    # GlobalAgentRegistry.stream_all_messages 已确认拿到数据,以下注释中写有数据例子
     async for msg, last in GlobalAgentRegistry.stream_all_messages(
             main_task=ari(user_msg),
     ):
-        print(msg,last)
-        # msg 数据结构:
-        # 主智能体回复 name==PROJECT_NAME ToolUseBlock 的 name == ‘_plan_task’ 输出 input 的 task_description 代表请求规划器
-        # 流式打印 input 的 task_description
-        # ```Msg(id='oY5N8mSLh2neaxaEvQoF3s', name='Ari', content=[{'type': 'tool_use', 'id': 'call_5164c8d8a8cb4b789f843541', 'name': '_plan_task', 'input': {}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:09.202', invocation_id='None') False
-        # Msg(id='oY5N8mSLh2neaxaEvQoF3s', name='Ari', content=[{'type': 'tool_use', 'id': 'call_5164c8d8a8cb4b789f843541', 'name': '_plan_task', 'input': {}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:09.202', invocation_id='None') False
-        # Msg(id='oY5N8mSLh2neaxaEvQoF3s', name='Ari', content=[{'type': 'tool_use', 'id': 'call_5164c8d8a8cb4b789f843541', 'name': '_plan_task', 'input': {'task_description': ''}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:09.202', invocation_id='None') False
-        # Msg(id='oY5N8mSLh2neaxaEvQoF3s', name='Ari', content=[{'type': 'tool_use', 'id': 'call_5164c8d8a8cb4b789f843541', 'name': '_plan_task', 'input': {'task_description': '规划一个包含5个'}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:09.202', invocation_id='None') False
-        # Msg(id='oY5N8mSLh2neaxaEvQoF3s', name='Ari', content=[{'type': 'tool_use', 'id': 'call_5164c8d8a8cb4b789f843541', 'name': '_plan_task', 'input': {'task_description': '规划一个包含5个计算步骤的任务，其中3'}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:09.202', invocation_id='None') False```
-        # ...
-        #
-        # Planning name == Planning and last == true 时解析 TextBlock 的text内容,拿到 steps 作为计划列表 status 全是0 代表等待开始
-        # 不流式打印
-        # Msg(id='nBc84R4iJngpAfZFN4U4rz', name='Planning', content=[{'type': 'text', 'text': '```'}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:11.693', invocation_id='None') False
-        # Msg(id='nBc84R4iJngpAfZFN4U4rz', name='Planning', content=[{'type': 'text', 'text': '```json\n{\n'}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:11.693', invocation_id='None') False
-        # Msg(id='nBc84R4iJngpAfZFN4U4rz', name='Planning', content=[{'type': 'text', 'text': '```json\n{\n    "steps'}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:11.693', invocation_id='None') False
-        # Msg(id='nBc84R4iJngpAfZFN4U4rz', name='Planning', content=[{'type': 'text', 'text': '```json\n{\n    "steps": [\n       '}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:11.693', invocation_id='None') False
-        # Msg(id='nBc84R4iJngpAfZFN4U4rz', name='Planning', content=[{'type': 'text', 'text': '```json\n{\n    "steps": [\n        {\n            "task_id":'}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:11.693', invocation_id='None') False
-        # ...
-        # Msg(id='nBc84R4iJngpAfZFN4U4rz', name='Planning', content=[{'type': 'text', 'text': '```json\n{\n    "steps": [\n        {\n            "task_id": 1,\n            "task_name": "加法1",\n            "description": "计算 2 + 3",\n            "dependencies": [],\n            "status": 0\n        },\n        {\n            "task_id": 2,\n            "task_name": "加法2",\n            "description": "计算 6 + 3",\n            "dependencies": [],\n            "status": 0\n        },\n        {\n            "task_id": 3,\n            "task_name": "加法3",\n            "description": "计算 4 + 3",\n            "dependencies": [],\n            "status": 0\n        },\n        {\n            "task_id": 4,\n            "task_name": "乘法",\n            "description": "计算 2 * 5",\n            "dependencies": [],\n            "status": 0\n        },\n        {\n            "task_id": 5,\n            "task_name": "依赖加法",\n            "description": "计算 3 + 步骤4的结果",\n            "dependencies": [4],\n            "status": 0\n        }\n    ],\n    "execution_mode": "parallel"\n}\n```'}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:11.693', invocation_id='None') True
-        #
-        # 主智能体回复 name==PROJECT_NAME and ToolUseBlock 的 name == ‘create_worker’ 输出 input 的 work_prompt 代表正在给input.task_id号任务分配专家 此时更新steps[input.task_id] 的状态为 1 代表分配专家中
-        # 流式打印 input 的 dask_description
-        # Msg(id='6m9pUF8xrvM2Ny9UEaiznf', name='Ari', content=[{'type': 'tool_use', 'id': 'call_b26bb2d1f4f64ca7b316e6a0', 'name': 'create_worker', 'input': {}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:17.527', invocation_id='None') False
-        # Msg(id='6m9pUF8xrvM2Ny9UEaiznf', name='Ari', content=[{'type': 'tool_use', 'id': 'call_b26bb2d1f4f64ca7b316e6a0', 'name': 'create_worker', 'input': {}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:17.527', invocation_id='None') False
-        # Msg(id='6m9pUF8xrvM2Ny9UEaiznf', name='Ari', content=[{'type': 'tool_use', 'id': 'call_b26bb2d1f4f64ca7b316e6a0', 'name': 'create_worker', 'input': {'task_id': 1}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:17.527', invocation_id='None') False
-        # Msg(id='6m9pUF8xrvM2Ny9UEaiznf', name='Ari', content=[{'type': 'tool_use', 'id': 'call_b26bb2d1f4f64ca7b316e6a0', 'name': 'create_worker', 'input': {'task_id': 1, 'task_description': '计算 2'}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:17.527', invocation_id='None') False
-        # Msg(id='6m9pUF8xrvM2Ny9UEaiznf', name='Ari', content=[{'type': 'tool_use', 'id': 'call_b26bb2d1f4f64ca7b316e6a0', 'name': 'create_worker', 'input': {'task_id': 1, 'task_description': '计算 2 + 3'}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:17.527', invocation_id='None') False
-        # Msg(id='6m9pUF8xrvM2Ny9UEaiznf', name='Ari', content=[{'type': 'tool_use', 'id': 'call_b26bb2d1f4f64ca7b316e6a0', 'name': 'create_worker', 'input': {'task_id': 1, 'task_description': '计算 2 + 3'}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:17.527', invocation_id='None') False
-        # Msg(id='6m9pUF8xrvM2Ny9UEaiznf', name='Ari', content=[{'type': 'tool_use', 'id': 'call_b26bb2d1f4f64ca7b316e6a0', 'name': 'create_worker', 'input': {'task_id': 1, 'task_description': '计算 2 + 3', 'agent_name': '加法计算器'}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:17.527', invocation_id='None') False
-        # Msg(id='6m9pUF8xrvM2Ny9UEaiznf', name='Ari', content=[{'type': 'tool_use', 'id': 'call_b26bb2d1f4f64ca7b316e6a0', 'name': 'create_worker', 'input': {'task_id': 1, 'task_description': '计算 2 + 3', 'agent_name': '加法计算器1'}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:17.527', invocation_id='None') False
-        # Msg(id='6m9pUF8xrvM2Ny9UEaiznf', name='Ari', content=[{'type': 'tool_use', 'id': 'call_b26bb2d1f4f64ca7b316e6a0', 'name': 'create_worker', 'input': {'task_id': 1, 'task_description': '计算 2 + 3', 'agent_name': '加法计算器1', 'work_prompt': '你'}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:17.527', invocation_id='None') False
-        # Msg(id='6m9pUF8xrvM2Ny9UEaiznf', name='Ari', content=[{'type': 'tool_use', 'id': 'call_b26bb2d1f4f64ca7b316e6a0', 'name': 'create_worker', 'input': {'task_id': 1, 'task_description': '计算 2 + 3', 'agent_name': '加法计算器1', 'work_prompt': '你是一个精准的数学计算'}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:17.527', invocation_id='None') False
-        # Msg(id='6m9pUF8xrvM2Ny9UEaiznf', name='Ari', content=[{'type': 'tool_use', 'id': 'call_b26bb2d1f4f64ca7b316e6a0', 'name': 'create_worker', 'input': {'task_id': 1, 'task_description': '计算 2 + 3', 'agent_name': '加法计算器1', 'work_prompt': '你是一个精准的数学计算专家。你的任务是执行'}}], role='assistant', metadata=None, timestamp='2026-01-08 13:39:17.527', invocation_id='None') False
-        # ...
-        #
-        # 子智能体回复(专家回复) name==msg.name.startWith("Worker_") 的
-        # task_id = 以 - 截取字符串,最后的是 task_id
-        # 如果 !last 并且解析到 task_id. 代表正在工作. 更新steps[input.task_id] 的状态为 2 表示工作中.
-        # 流式打印 TextBlock 的 Text
-        # 如果 last 表示工作完成. 更新steps[input.task_id] 的状态为3 表示工作完成.并检查 steps 的数组中的所有{'status'} 是否都是 3.如果是 代表全部规划完成.
-        # Msg(id='bLEqcW778ZeqkYNw2UUh5N', name='Worker_Addition_Calculator_1-1', content=[{'type': 'text', 'text': '5'}], role='assistant', metadata=None, timestamp='2026-01-08 14:42:03.921', invocation_id='None') False
-        # Msg(id='bLEqcW778ZeqkYNw2UUh5N', name='Worker_Addition_Calculator_1-1', content=[{'type': 'text', 'text': '5'}], role='assistant', metadata=None, timestamp='2026-01-08 14:42:03.921', invocation_id='None') False
-        # Msg(id='bLEqcW778ZeqkYNw2UUh5N', name='Worker_Addition_Calculator_1-1', content=[{'type': 'text', 'text': '5'}], role='assistant', metadata=None, timestamp='2026-01-08 14:42:03.921', invocation_id='None') False
-        # Msg(id='bLEqcW778ZeqkYNw2UUh5N', name='Worker_Addition_Calculator_1-1', content=[{'type': 'text', 'text': '5'}], role='assistant', metadata=None, timestamp='2026-01-08 14:42:03.921', invocation_id='None') True
-        # ...
-        #
-        #
+        # 提取文本内容用于打印
+        text_content = ""
+        if isinstance(msg.content, list):
+            for block in msg.content:
+                if block.get("type") == "text":
+                    text_content = block.get("text", "")
+                    break
+
+        # 处理不同类型的Agent消息
+        if msg.name == PROJECT_NAME:  # 主Agent (Ari)
+            # 检查是否是工具调用
+            if isinstance(msg.content, list) and len(msg.content) > 0:
+                first_block = msg.content[0]
+                if first_block.get("type") == "tool_use":
+                    tool_name = first_block.get("name")
+                    tool_input = first_block.get("input", {})
+
+                    if tool_name == "_plan_task":
+                        # 规划任务请求 - 流式打印 task_description
+                        task_desc = tool_input.get("task_description", "")
+                        if task_desc:
+                            print(f"\r规划任务: {task_desc}", end="", flush=True)
+
+                    elif tool_name == "create_worker":
+                        # 创建子Agent - 流式打印 task_description
+                        task_desc = tool_input.get("task_description", "")
+                        task_id = tool_input.get("task_id")
+                        if task_desc and task_id is not None:
+                            print(f"\r分配专家给任务 {task_id}: {task_desc}", end="", flush=True)
+
+                            # 更新任务状态为1 (分配专家中)
+                            if steps and task_id <= len(steps):
+                                steps[task_id - 1]["status"] = 1
+
+        elif msg.name == "Planning":  # 规划Agent
+            if last and text_content:
+                # 完整的规划结果，解析JSON
+                try:
+                    # 提取JSON内容（去除```标记）
+                    json_start = text_content.find("{")
+                    json_end = text_content.rfind("}") + 1
+                    if json_start != -1 and json_end != -1:
+                        json_str = text_content[json_start:json_end]
+                        planning_result = json.loads(json_str)
+                        steps = planning_result.get("steps", [])
+                        planning_completed = True
+
+                        # 打印规划结果
+                        print(f"\n\n规划完成! 共 {len(steps)} 个步骤:")
+                        for i, step in enumerate(steps):
+                            deps = step.get("dependencies", [])
+                            dep_str = f" (依赖: {deps})" if deps else ""
+                            print(f"  {i+1}. {step['task_name']}: {step['description']}{dep_str}")
+                        print()
+
+                except json.JSONDecodeError as e:
+                    print(f"\n规划结果解析失败: {e}")
+                    print(f"原始内容: {text_content}")
+
+        elif msg.name.startswith("Worker_"):  # 子Agent (专家)
+            # 从名字中提取 task_id (格式: Worker_xxx-task_id)
+            try:
+                task_id_str = msg.name.split("-")[-1]
+                task_id = int(task_id_str)
+
+                if not last:
+                    # 工作中 - 流式打印
+                    if text_content:
+                        print(f"\r任务 {task_id} 执行中: {text_content}", end="", flush=True)
+
+                    # 更新任务状态为2 (工作中)
+                    if steps and task_id <= len(steps):
+                        steps[task_id - 1]["status"] = 2
+
+                else:
+                    # 工作完成
+                    if text_content:
+                        print(f"\r任务 {task_id} 完成: {text_content}")
+
+                    # 更新任务状态为3 (完成)
+                    if steps and task_id <= len(steps):
+                        steps[task_id - 1]["status"] = 3
+
+                    # 检查是否所有任务都完成了
+                    if steps and all(step["status"] == 3 for step in steps):
+                        print("\n🎉 所有任务执行完成!")
+
+            except (ValueError, IndexError):
+                # 如果无法解析task_id，直接打印内容
+                if text_content:
+                    print(f"\r{msg.name}: {text_content}", end="" if not last else "\n", flush=True)
+
+        else:
+            # 其他消息类型
+            if text_content:
+                print(f"\r{msg.name}: {text_content}", end="" if not last else "\n", flush=True)
 
         if last:
+            print()  # 换行        if last:
             print()  # 换行
 
 
