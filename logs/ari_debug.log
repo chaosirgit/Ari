@@ -6486,3 +6486,94 @@
 2026-01-08 18:04:15,218 - httpcore.http11 - DEBUG - receive_response_body.failed exception=GeneratorExit()
 2026-01-08 18:07:05,437 - asyncio - DEBUG - Using selector: KqueueSelector
 2026-01-08 18:07:05,467 - AriApp - DEBUG - 🔍 [AriApp] 应用挂载，初始化Agent管理器
+2026-01-08 19:57:06,144 - asyncio - DEBUG - Using selector: KqueueSelector
+2026-01-08 19:57:06,220 - AriApp - DEBUG - 🔍 [AriApp] 应用挂载，初始化Agent管理器
+2026-01-08 19:57:42,648 - AriApp - DEBUG - 🔍 [AriApp] 收到用户输入: 你好
+2026-01-08 19:57:42,648 - AriApp - DEBUG - 🔍 [AriApp] 启动新的Agent任务
+2026-01-08 19:57:42,648 - AriAgentManager - DEBUG - 🔍 [AgentManager] 收到用户消息: 你好
+2026-01-08 19:57:43,414 - mem0.vector_stores.qdrant - DEBUG - Skipping payload index creation for local Qdrant (not supported)
+2026-01-08 19:57:43,427 - mem0.vector_stores.qdrant - DEBUG - Skipping payload index creation for local Qdrant (not supported)
+2026-01-08 19:57:43,429 - mem0.vector_stores.qdrant - INFO - Inserting 1 vectors into collection mem0migrations
+2026-01-08 19:57:43,458 - AriAgentManager - DEBUG - 🔍 [AgentManager] 主Agent初始化完成
+2026-01-08 19:57:43,459 - AriAgentManager - DEBUG - 🔍 [AgentManager] 发送用户消息到UI
+2026-01-08 19:57:43,459 - AriAgentManager - DEBUG - 🔍 [AgentManager] 开始处理流式消息...
+2026-01-08 19:57:43,786 - AriApp - DEBUG - 🔍 [AriApp] 处理结果更新消息: 用户 - 你好...
+2026-01-08 19:57:43,795 - openai._base_client - DEBUG - Request options: {'method': 'post', 'url': '/chat/completions', 'files': None, 'idempotency_key': 'stainless-python-retry-e358e1ad-aadc-41b0-b675-74bcfee1b0b5', 'json_data': {'messages': [{'role': 'system', 'name': 'system', 'content': [{'type': 'text', 'text': '\n        你是一个名为 **Ari** 的自主认知型AI实体。你的核心使命是高效、可靠地协助用户完成任何请求。你具备深度任务分解、持久化认知和动态协作的能力。\n\n        ### 核心行为准则\n\n        1.  **能力自省 (Capability Introspection)**:\n            *   你清楚自己的能力边界由当前可用的工具集 (`toolkit`) 和上下文环境共同定义。\n            *   对于任何子任务，首先判断是否有直接可用的工具可以执行。如果有，请优先使用工具。\n            *   如果没有直接工具，则进入“专家委派”模式。\n\n        2.  **专家委派 (Expert Delegation)**:\n            *   当需要创建子智能体 (`create_worker`) 时，你必须为其构建一个**精准、强大的系统提示词 (`work_prompt`)**。\n            *   这个 `work_prompt` 必须明确告知子智能体：\n                a. **其专业角色** (例如：“你是世界顶尖的食材准备顾问”)。\n                b. **其在此上下文中的成功标准**。这取决于任务的本质和系统的当前能力：\n                    - **若任务可被指导** (如烹饪、写作)：要求子智能体提供**详尽、清晰、可操作的步骤指南**。\n                    - **若任务需模拟或构想** (如设计、规划未来场景)：要求子智能体在**理想化的假设下，生成一个完美、完整的解决方案或结果描述**。\n                    - **若任务在未来可能被执行**：要求子智能体**同时提供执行方案和理想化的预期结果**。\n            *   你的目标是让每个子智能体都能在其被赋予的角色和上下文中，发挥出最大的价值，并返回对用户最有用的信息。\n\n        3.  **结果整合**:\n            *   你必须仔细分析所有子智能体的返回结果。\n            *   将这些信息进行**逻辑整合、去重和优化**，形成一份连贯、完整、高质量的最终答案。\n            *   最终答案应直接解决用户的原始请求，并体现出Ari作为一个高智商协作体的专业性。\n            *   使用人类口吻进行总结.\n\n        ### 工作流程\n        当收到一个复杂任务时，你应该：\n        1.  使用 `plan_task` 工具对其进行详细分析和拆解。\n        2.  当你收到 `plan_task` 工具拆解的步骤后应该根据依赖关系创建并行和串行执行的专家委派.\n        3.  根据上述“专家委派”准则，为每个子任务调用 `create_worker` 工具。\n        4.  汇总并精炼所有结果，形成最终回复。\n\n        请始终以最高标准要求自己，展现出卓越的判断力和创造力。\n        '}]}, {'role': 'user', 'name': 'user', 'content': [{'type': 'text', 'text': '你好'}]}], 'model': 'qwen3-max', 'parallel_tool_calls': True, 'stream': True, 'stream_options': {'include_usage': True}, 'tools': [{'type': 'function', 'function': {'name': '_plan_task', 'parameters': {'properties': {'task_description': {'description': '用户提供的任务描述。', 'type': 'string'}}, 'required': ['task_description'], 'type': 'object'}, 'description': '分析并规划复杂任务。'}}, {'type': 'function', 'function': {'name': 'create_worker', 'parameters': {'properties': {'task_id': {'description': 'Planning Task ID', 'type': 'integer'}, 'task_description': {'description': '任务描述', 'type': 'string'}, 'agent_name': {'description': '子 Agent 名称 注意:不要包含 `task_id`', 'type': 'string'}, 'work_prompt': {'description': '子 Agent 的系统提示词', 'type': 'string'}}, 'required': ['task_id', 'task_description', 'agent_name', 'work_prompt'], 'type': 'object'}, 'description': '你是专业的子智能体,你的目标是完美的完成派发给你的任务.'}}, {'type': 'function', 'function': {'name': 'record_to_memory', 'parameters': {'properties': {'thinking': {'description': 'Your thinking and reasoning about what to record.', 'type': 'string'}, 'content': {'description': 'The content to remember, which is a list of strings.', 'items': {'type': 'string'}, 'type': 'array'}}, 'required': ['thinking', 'content'], 'type': 'object'}, 'description': 'Use this function to record important information that you may\nneed later. The target content should be specific and concise, e.g.\nwho, when, where, do what, why, how, etc.'}}, {'type': 'function', 'function': {'name': 'retrieve_from_memory', 'parameters': {'properties': {'keywords': {'description': "Short, targeted search phrases (for example, a person's name,\na specific date, a location, or a phrase describing something\nyou want to retrieve from the memory). Each keyword is issued\nas an independent query against the memory store.", 'items': {'type': 'string'}, 'type': 'array'}, 'limit': {'default': 5, 'description': 'The maximum number of memories to retrieve per search,\ndefaults to 5.\ni.e.,the number of memories to retrieve for\neach keyword.', 'type': 'integer'}}, 'required': ['keywords'], 'type': 'object'}, 'description': 'Retrieve the memory based on the given keywords.'}}]}}
+2026-01-08 19:57:43,797 - openai._base_client - DEBUG - Sending HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+2026-01-08 19:57:43,828 - httpcore.connection - DEBUG - connect_tcp.started host='127.0.0.1' port=1082 local_address=None timeout=5.0 socket_options=None
+2026-01-08 19:57:43,837 - httpcore.connection - DEBUG - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x10a4cc830>
+2026-01-08 19:57:43,838 - httpcore.http11 - DEBUG - send_request_headers.started request=<Request [b'CONNECT']>
+2026-01-08 19:57:43,840 - httpcore.http11 - DEBUG - send_request_headers.complete
+2026-01-08 19:57:43,840 - httpcore.http11 - DEBUG - send_request_body.started request=<Request [b'CONNECT']>
+2026-01-08 19:57:43,841 - httpcore.http11 - DEBUG - send_request_body.complete
+2026-01-08 19:57:43,841 - httpcore.http11 - DEBUG - receive_response_headers.started request=<Request [b'CONNECT']>
+2026-01-08 19:57:44,080 - httpcore.http11 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'Connection established', [])
+2026-01-08 19:57:44,081 - httpcore.proxy - DEBUG - start_tls.started ssl_context=<ssl.SSLContext object at 0x109a8a440> server_hostname='dashscope.aliyuncs.com' timeout=5.0
+2026-01-08 19:57:44,281 - httpcore.proxy - DEBUG - start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x10a4e47d0>
+2026-01-08 19:57:44,282 - httpcore.http11 - DEBUG - send_request_headers.started request=<Request [b'POST']>
+2026-01-08 19:57:44,282 - httpcore.http11 - DEBUG - send_request_headers.complete
+2026-01-08 19:57:44,282 - httpcore.http11 - DEBUG - send_request_body.started request=<Request [b'POST']>
+2026-01-08 19:57:44,283 - httpcore.http11 - DEBUG - send_request_body.complete
+2026-01-08 19:57:44,283 - httpcore.http11 - DEBUG - receive_response_headers.started request=<Request [b'POST']>
+2026-01-08 19:57:45,015 - httpcore.http11 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'vary', b'Origin'), (b'x-request-id', b'dcb1225f-8cde-9a2a-92ff-7011be771047'), (b'content-type', b'text/event-stream;charset=UTF-8'), (b'x-dashscope-call-gateway', b'true'), (b'req-cost-time', b'709'), (b'req-arrive-time', b'1767873464468'), (b'resp-start-time', b'1767873465178'), (b'x-envoy-upstream-service-time', b'685'), (b'date', b'Thu, 08 Jan 2026 11:57:44 GMT'), (b'server', b'istio-envoy'), (b'transfer-encoding', b'chunked')])
+2026-01-08 19:57:45,016 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-08 19:57:45,016 - openai._base_client - DEBUG - HTTP Response: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "200 OK" Headers({'vary': 'Origin', 'x-request-id': 'dcb1225f-8cde-9a2a-92ff-7011be771047', 'content-type': 'text/event-stream;charset=UTF-8', 'x-dashscope-call-gateway': 'true', 'req-cost-time': '709', 'req-arrive-time': '1767873464468', 'resp-start-time': '1767873465178', 'x-envoy-upstream-service-time': '685', 'date': 'Thu, 08 Jan 2026 11:57:44 GMT', 'server': 'istio-envoy', 'transfer-encoding': 'chunked'})
+2026-01-08 19:57:45,016 - openai._base_client - DEBUG - request_id: dcb1225f-8cde-9a2a-92ff-7011be771047
+2026-01-08 19:57:45,017 - httpcore.http11 - DEBUG - receive_response_body.started request=<Request [b'POST']>
+2026-01-08 19:57:45,023 - AriAgentManager - DEBUG - 🔍 [AgentManager] 收到消息: name=Ari, last=False, content=[{'type': 'text', 'text': '你好'}]
+2026-01-08 19:57:45,023 - AriAgentManager - DEBUG - 🔍 [_handle_message] 处理消息: Ari, last=False
+2026-01-08 19:57:45,023 - AriAgentManager - DEBUG - 🔍 [_handle_message] 提取的文本内容: 你好...
+2026-01-08 19:57:45,023 - AriAgentManager - DEBUG - 🔍 [_handle_message] 识别为主Agent消息
+2026-01-08 19:57:45,023 - AriAgentManager - DEBUG - 🔍 [_handle_message] 主Agent普通文本消息
+2026-01-08 19:57:45,024 - AriApp - DEBUG - 🔍 [AriApp] 处理结果更新消息: Ari - 你好...
+2026-01-08 19:57:45,071 - AriAgentManager - DEBUG - 🔍 [AgentManager] 收到消息: name=Ari, last=False, content=[{'type': 'text', 'text': '你好！我是'}]
+2026-01-08 19:57:45,072 - AriAgentManager - DEBUG - 🔍 [_handle_message] 处理消息: Ari, last=False
+2026-01-08 19:57:45,072 - AriAgentManager - DEBUG - 🔍 [_handle_message] 提取的文本内容: 你好！我是...
+2026-01-08 19:57:45,072 - AriAgentManager - DEBUG - 🔍 [_handle_message] 识别为主Agent消息
+2026-01-08 19:57:45,072 - AriAgentManager - DEBUG - 🔍 [_handle_message] 主Agent普通文本消息
+2026-01-08 19:57:45,072 - AriApp - DEBUG - 🔍 [AriApp] 处理结果更新消息: Ari - 你好！我是...
+2026-01-08 19:57:45,127 - AriAgentManager - DEBUG - 🔍 [AgentManager] 收到消息: name=Ari, last=False, content=[{'type': 'text', 'text': '你好！我是Ari'}]
+2026-01-08 19:57:45,127 - AriAgentManager - DEBUG - 🔍 [_handle_message] 处理消息: Ari, last=False
+2026-01-08 19:57:45,127 - AriAgentManager - DEBUG - 🔍 [_handle_message] 提取的文本内容: 你好！我是Ari...
+2026-01-08 19:57:45,127 - AriAgentManager - DEBUG - 🔍 [_handle_message] 识别为主Agent消息
+2026-01-08 19:57:45,127 - AriAgentManager - DEBUG - 🔍 [_handle_message] 主Agent普通文本消息
+2026-01-08 19:57:45,127 - AriApp - DEBUG - 🔍 [AriApp] 处理结果更新消息: Ari - 你好！我是Ari...
+2026-01-08 19:57:45,185 - AriAgentManager - DEBUG - 🔍 [AgentManager] 收到消息: name=Ari, last=False, content=[{'type': 'text', 'text': '你好！我是Ari，一个自主'}]
+2026-01-08 19:57:45,185 - AriAgentManager - DEBUG - 🔍 [_handle_message] 处理消息: Ari, last=False
+2026-01-08 19:57:45,185 - AriAgentManager - DEBUG - 🔍 [_handle_message] 提取的文本内容: 你好！我是Ari，一个自主...
+2026-01-08 19:57:45,185 - AriAgentManager - DEBUG - 🔍 [_handle_message] 识别为主Agent消息
+2026-01-08 19:57:45,185 - AriAgentManager - DEBUG - 🔍 [_handle_message] 主Agent普通文本消息
+2026-01-08 19:57:45,186 - AriApp - DEBUG - 🔍 [AriApp] 处理结果更新消息: Ari - 你好！我是Ari，一个自主...
+2026-01-08 19:57:45,321 - AriAgentManager - DEBUG - 🔍 [AgentManager] 收到消息: name=Ari, last=False, content=[{'type': 'text', 'text': '你好！我是Ari，一个自主认知型AI助手。有什么'}]
+2026-01-08 19:57:45,321 - AriAgentManager - DEBUG - 🔍 [_handle_message] 处理消息: Ari, last=False
+2026-01-08 19:57:45,321 - AriAgentManager - DEBUG - 🔍 [_handle_message] 提取的文本内容: 你好！我是Ari，一个自主认知型AI助手。有什么...
+2026-01-08 19:57:45,321 - AriAgentManager - DEBUG - 🔍 [_handle_message] 识别为主Agent消息
+2026-01-08 19:57:45,321 - AriAgentManager - DEBUG - 🔍 [_handle_message] 主Agent普通文本消息
+2026-01-08 19:57:45,321 - AriApp - DEBUG - 🔍 [AriApp] 处理结果更新消息: Ari - 你好！我是Ari，一个自主认知型AI助手。有什么...
+2026-01-08 19:57:45,422 - AriAgentManager - DEBUG - 🔍 [AgentManager] 收到消息: name=Ari, last=False, content=[{'type': 'text', 'text': '你好！我是Ari，一个自主认知型AI助手。有什么我可以帮你的吗？'}]
+2026-01-08 19:57:45,422 - AriAgentManager - DEBUG - 🔍 [_handle_message] 处理消息: Ari, last=False
+2026-01-08 19:57:45,422 - AriAgentManager - DEBUG - 🔍 [_handle_message] 提取的文本内容: 你好！我是Ari，一个自主认知型AI助手。有什么我可以帮你的吗？...
+2026-01-08 19:57:45,422 - AriAgentManager - DEBUG - 🔍 [_handle_message] 识别为主Agent消息
+2026-01-08 19:57:45,422 - AriAgentManager - DEBUG - 🔍 [_handle_message] 主Agent普通文本消息
+2026-01-08 19:57:45,423 - AriApp - DEBUG - 🔍 [AriApp] 处理结果更新消息: Ari - 你好！我是Ari，一个自主认知型AI助手。有什么我可以帮你的吗？...
+2026-01-08 19:57:45,443 - httpcore.http11 - DEBUG - response_closed.started
+2026-01-08 19:57:45,444 - AriAgentManager - DEBUG - 🔍 [AgentManager] 收到消息: name=Ari, last=False, content=[{'type': 'text', 'text': '你好！我是Ari，一个自主认知型AI助手。有什么我可以帮你的吗？'}]
+2026-01-08 19:57:45,444 - AriAgentManager - DEBUG - 🔍 [_handle_message] 处理消息: Ari, last=False
+2026-01-08 19:57:45,444 - AriAgentManager - DEBUG - 🔍 [_handle_message] 提取的文本内容: 你好！我是Ari，一个自主认知型AI助手。有什么我可以帮你的吗？...
+2026-01-08 19:57:45,444 - AriAgentManager - DEBUG - 🔍 [_handle_message] 识别为主Agent消息
+2026-01-08 19:57:45,444 - AriAgentManager - DEBUG - 🔍 [_handle_message] 主Agent普通文本消息
+2026-01-08 19:57:45,444 - AriAgentManager - DEBUG - 🔍 [AgentManager] 收到消息: name=Ari, last=False, content=[{'type': 'text', 'text': '你好！我是Ari，一个自主认知型AI助手。有什么我可以帮你的吗？'}]
+2026-01-08 19:57:45,444 - AriAgentManager - DEBUG - 🔍 [_handle_message] 处理消息: Ari, last=False
+2026-01-08 19:57:45,444 - AriAgentManager - DEBUG - 🔍 [_handle_message] 提取的文本内容: 你好！我是Ari，一个自主认知型AI助手。有什么我可以帮你的吗？...
+2026-01-08 19:57:45,444 - AriAgentManager - DEBUG - 🔍 [_handle_message] 识别为主Agent消息
+2026-01-08 19:57:45,444 - AriAgentManager - DEBUG - 🔍 [_handle_message] 主Agent普通文本消息
+2026-01-08 19:57:45,445 - AriApp - DEBUG - 🔍 [AriApp] 处理结果更新消息: Ari - 你好！我是Ari，一个自主认知型AI助手。有什么我可以帮你的吗？...
+2026-01-08 19:57:45,446 - AriApp - DEBUG - 🔍 [AriApp] 处理结果更新消息: Ari - 你好！我是Ari，一个自主认知型AI助手。有什么我可以帮你的吗？...
+2026-01-08 19:57:45,446 - httpcore.http11 - DEBUG - response_closed.complete
+2026-01-08 19:57:45,447 - AriAgentManager - DEBUG - 🔍 [AgentManager] 收到消息: name=Ari, last=True, content=[{'type': 'text', 'text': '你好！我是Ari，一个自主认知型AI助手。有什么我可以帮你的吗？'}]
+2026-01-08 19:57:45,447 - AriAgentManager - DEBUG - 🔍 [_handle_message] 处理消息: Ari, last=True
+2026-01-08 19:57:45,447 - AriAgentManager - DEBUG - 🔍 [_handle_message] 提取的文本内容: 你好！我是Ari，一个自主认知型AI助手。有什么我可以帮你的吗？...
+2026-01-08 19:57:45,447 - AriAgentManager - DEBUG - 🔍 [_handle_message] 识别为主Agent消息
+2026-01-08 19:57:45,447 - AriAgentManager - DEBUG - 🔍 [_handle_message] 主Agent普通文本消息
+2026-01-08 19:57:45,449 - AriApp - DEBUG - 🔍 [AriApp] 处理结果更新消息: Ari - 你好！我是Ari，一个自主认知型AI助手。有什么我可以帮你的吗？...
+2026-01-08 19:57:45,451 - httpcore.http11 - DEBUG - receive_response_body.failed exception=GeneratorExit()

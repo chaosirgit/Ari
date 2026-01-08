@@ -25,6 +25,7 @@ async def main():
     )
 
     # GlobalAgentRegistry.stream_all_messages 已确认拿到数据,以下注释中写有数据例子
+
     async for msg, last in GlobalAgentRegistry.stream_all_messages(
             main_task=ari(user_msg),
     ):
