@@ -26,7 +26,7 @@ class UserInputWidget(Container):
     UserInputWidget {
         width: 100%;
         height: 100%;
-        border: solid $primary;
+        padding: 1 2;
         background: $surface;
     }
 
@@ -61,6 +61,7 @@ class UserInputWidget(Container):
         self._history = []
         self._history_index = -1
         self._current_input = ""
+        self.border_title = "⌨️  用户输入"
 
     def compose(self) -> ComposeResult:
         """构建组件"""

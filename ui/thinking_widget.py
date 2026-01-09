@@ -14,6 +14,26 @@ from config import logger
 class ThinkingWidget(VerticalScroll):
     """思考区组件 - 显示 Agent 的工具调用思考过程"""
 
+    DEFAULT_CSS = """
+    ThinkingWidget {
+        width: 100%;
+        height: 100%;
+        padding: 1 2;
+        background: $surface;
+    }
+
+    ThinkingWidget > Vertical {
+        width: 100%;
+        height: auto;
+    }
+
+    ThinkingWidget Static {
+        width: 100%;
+        margin-bottom: 1;
+        color: $text;
+    }
+    """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.border_title = "💭 思考过程"

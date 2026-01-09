@@ -8,6 +8,7 @@ import asyncio
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer
 from textual.widgets import TextArea
+from textual.containers import Container
 
 from agentscope.message import Msg
 from core.main_agent import MainReActAgent
@@ -35,33 +36,38 @@ class MultiAgentApp(App):
     #chat { 
         width: 100%; 
         height: 100%; 
-        border: solid cyan;
+        border: solid $primary;
+        background: $surface;
     }
 
     #tasks { 
         width: 100%; 
         height: 100%; 
-        border: solid green;
+        border: solid $primary;
+        background: $surface;
     }
 
     #thinking { 
         width: 100%; 
         height: 100%; 
-        border: solid yellow;
+        border: solid $primary;
+        background: $surface;
     }
 
     #system_messages {
         column-span: 3;
         width: 100%;
         height: 100%;
-        border: solid magenta;
+        border: solid $primary;
+        background: $surface;
     }
 
     #user_input {
         column-span: 3;
         width: 100%;
         height: 100%;
-        border: solid blue;
+        border: solid $primary;
+        background: $surface;
     }
     """
 
@@ -120,9 +126,6 @@ class MultiAgentApp(App):
                 # 保留主 Agent（名字是 PROJECT_NAME）
                 if agent.name == PROJECT_NAME:
                     agents_to_keep.append(agent)
-                # 可选：也可以保留其他需要保留的 Agent
-                # elif agent.name.startswith("SomePrefix"):
-                #     agents_to_keep.append(agent)
 
             # 只有当有 Agent 需要清理时才执行
             if len(agents_to_keep) < len(GlobalAgentRegistry._agents):

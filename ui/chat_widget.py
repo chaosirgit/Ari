@@ -14,15 +14,10 @@ class ChatWidget(Widget):
         height: 100%;
     }
 
-    ChatWidget > Header {
-        dock: top;
-    }
-
     #chat-scroll {
         width: 100%;
         height: 1fr;
         padding: 1 2;
-        border: solid $primary;
         background: $surface;
     }
 
@@ -34,6 +29,7 @@ class ChatWidget(Widget):
 
     .message-content {
         margin-bottom: 1;
+        color: $text;
     }
 
     .streaming .message-sender {
@@ -48,10 +44,10 @@ class ChatWidget(Widget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.stream_widgets = {}
+        self.border_title = "💬 聊天区"
 
     def compose(self) -> ComposeResult:
         """构建UI组件"""
-        yield Header(show_clock=True)
         yield VerticalScroll(id="chat-scroll")
 
     async def add_message(self, msg: Msg, last: bool):

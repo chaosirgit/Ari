@@ -19,11 +19,15 @@ class TaskListWidget(VerticalScroll):
     TaskListWidget {
         width: 100%;
         height: 100%;
+        padding: 1 2;
+        background: $surface;
     }
 
     /* DataTable 自定义样式 */
     TaskListWidget DataTable {
+        width: 100%;
         height: 100%;
+        background: $surface;
     }
 
     /* 执行中的行高亮（蓝色背景） */
