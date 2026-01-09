@@ -281,26 +281,27 @@ class MessageBlock(Container):
         width: 100%;
         height: 1;
         margin-top: 1;
-    }
-
-    MessageBlock .message-copy-btn {
-        width: 8;
-        height: 1;
-        min-width: 8;
-        background: $surface-darken-1;
-        padding: 0;
         margin-left: 1;
-    }
-
-    MessageBlock .message-copy-btn:hover {
-        background: $primary;
     }
 
     MessageBlock .message-sender {
         color: $accent;
         text-style: bold;
         height: 1;
+        width: auto;
+    }
+
+    MessageBlock .message-copy-btn {
+        width: 8;
+        height: 1;
+        min-width: 8;
+        background: $primary;
+        padding: 0;
         margin-left: 1;
+    }
+
+    MessageBlock .message-copy-btn:hover {
+        background: $primary-lighten-1;
     }
 
     MessageBlock .message-content {
@@ -334,12 +335,12 @@ class MessageBlock(Container):
 
     def compose(self) -> ComposeResult:
         """构建UI"""
-        # 消息头（复制按钮 + 发送者）
+        # 消息头（发送者 + 复制按钮）
         with Horizontal(classes="message-header"):
-            yield Button(label="[copy]", classes="message-copy-btn", variant="default", compact=True,
-                         id=f"msg-copy-{id(self)}")
             sender_text = f"{self.sender_name} ⚡" if self.is_streaming else self.sender_name
             yield Static(sender_text, classes="message-sender")
+            yield Button(label="[copy]", classes="message-copy-btn", compact=True,
+                         id=f"msg-copy-{id(self)}")
 
         # 消息内容
         if self.has_code:
@@ -408,6 +409,7 @@ class MessageBlock(Container):
             elif isinstance(self._content_widget, MessageWithCode):
                 # 使用增量更新而不是重建
                 await self._content_widget.update_content(new_content)
+
 
 
 class ChatWidget(Widget):
