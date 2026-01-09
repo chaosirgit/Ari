@@ -1,8 +1,178 @@
+import sys
+import base64
+import subprocess
+import re
 from textual.app import ComposeResult
 from textual.widget import Widget
-from textual.widgets import Header, Static, Markdown
-from textual.containers import VerticalScroll
+from textual.widgets import Static, Markdown, Button
+from textual.containers import VerticalScroll, Horizontal, Container, Vertical
 from agentscope.message import Msg
+
+
+def copy_to_clipboard(text: str) -> bool:
+    """复制到剪贴板（Mac 优化）"""
+    try:
+        process = subprocess.Popen(
+            ['pbcopy'],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        process.communicate(text.encode('utf-8'))
+        return process.returncode == 0
+    except Exception:
+        try:
+            b64 = base64.b64encode(text.encode('utf-8')).decode('ascii')
+            sys.stdout.write(f'\033]52;c;{b64}\a')
+            sys.stdout.flush()
+            return True
+        except Exception:
+            return False
+
+
+class CodeBlockWithCopy(Container):
+    """单个代码块 + 复制按钮"""
+
+    DEFAULT_CSS = """
+    CodeBlockWithCopy {
+        width: 100%;
+        height: auto;
+        background: $panel;
+        border: solid $primary;
+        padding: 0;
+        margin: 1 0;
+    }
+
+    CodeBlockWithCopy .code-header {
+        width: 100%;
+        height: 1;
+        background: $primary-darken-1;
+        padding: 0 1;
+    }
+
+    CodeBlockWithCopy .copy-btn {
+        dock: right;
+        width: 10;
+        height: 1;
+        min-width: 10;
+        background: $primary;
+    }
+
+    CodeBlockWithCopy .copy-btn:hover {
+        background: $primary-lighten-1;
+    }
+
+    CodeBlockWithCopy .code-lang {
+        color: $text;
+        height: 1;
+        text-style: bold;
+    }
+
+    CodeBlockWithCopy .code-content {
+        width: 100%;
+        height: auto;
+        padding: 1;
+        background: $surface;
+    }
+    """
+
+    def __init__(self, code: str, language: str = "", **kwargs):
+        super().__init__(**kwargs)
+        self.code = code
+        self.language = language
+
+    def compose(self) -> ComposeResult:
+        """构建UI"""
+        with Horizontal(classes="code-header"):
+            yield Static(f"📝 {self.language or 'code'}", classes="code-lang")
+            yield Button(label="📋 复制", classes="copy-btn",compact=True, id=f"copy-{id(self)}")
+
+        # 使用 Markdown 渲染代码（保持高亮）
+        code_md = f"```{self.language}\n{self.code}\n```"
+        yield Markdown(code_md, classes="code-content")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """处理复制"""
+        if event.button.id == f"copy-{id(self)}":
+            if copy_to_clipboard(self.code):
+                event.button.label = "✅ 已复制"
+            else:
+                event.button.label = "❌ 失败"
+            self.set_timer(2, lambda: self._reset_button(event.button))
+
+    def _reset_button(self, button: Button):
+        button.label = "📋 复制"
+
+
+class MessageWithCode(Vertical):
+    """包含文本和代码块的消息容器"""
+
+    DEFAULT_CSS = """
+    MessageWithCode {
+        width: 100%;
+        height: auto;
+        margin-bottom: 1;
+    }
+
+    MessageWithCode Markdown {
+        width: 100%;
+        height: auto;
+        color: $text;
+    }
+    """
+
+    def __init__(self, markdown_text: str, **kwargs):
+        super().__init__(**kwargs)
+        self.markdown_text = markdown_text
+        self.parts = self._split_content(markdown_text)
+
+    def _split_content(self, text: str) -> list[dict]:
+        """分割文本和代码块"""
+        pattern = r'```(\w*)\n(.*?)```'
+        parts = []
+        last_end = 0
+
+        for match in re.finditer(pattern, text, re.DOTALL):
+            start, end = match.span()
+
+            # 添加代码块之前的文本
+            if start > last_end:
+                before_text = text[last_end:start].strip()
+                if before_text:
+                    parts.append({'type': 'text', 'content': before_text})
+
+            # 添加代码块
+            parts.append({
+                'type': 'code',
+                'language': match.group(1) or 'text',
+                'content': match.group(2).strip()
+            })
+
+            last_end = end
+
+        # 添加最后剩余的文本
+        if last_end < len(text):
+            after_text = text[last_end:].strip()
+            if after_text:
+                parts.append({'type': 'text', 'content': after_text})
+
+        return parts
+
+    def compose(self) -> ComposeResult:
+        """渲染所有部分"""
+        if not self.parts:
+            # 没有代码块，直接渲染 Markdown
+            yield Markdown(self.markdown_text)
+        else:
+            # 逐个渲染文本和代码块
+            for part in self.parts:
+                if part['type'] == 'text':
+                    yield Markdown(part['content'])
+                elif part['type'] == 'code':
+                    yield CodeBlockWithCopy(
+                        code=part['content'],
+                        language=part['language']
+                    )
 
 
 class ChatWidget(Widget):
@@ -66,43 +236,65 @@ class ChatWidget(Widget):
         scroll_container = self.query_one("#chat-scroll", VerticalScroll)
 
         if last:
+            # 消息完成
             if sender_name in self.stream_widgets:
                 widgets = self.stream_widgets[sender_name]
                 sender_widget = widgets["sender"]
                 content_widget = widgets["content"]
 
+                # 更新发送者状态
                 sender_widget.update(sender_name)
                 sender_widget.remove_class("streaming")
                 sender_widget.add_class("completed")
 
-                try:
-                    await content_widget.update(display_text)
-                except Exception:
-                    await content_widget.update(f"```\n{display_text}\n```")
+                # 检查是否有代码块
+                has_code = bool(re.search(r'```\w*\n.*?```', display_text, re.DOTALL))
+
+                if has_code:
+                    # 有代码块：替换为带复制按钮的组件
+                    await content_widget.remove()
+                    new_content = MessageWithCode(display_text, classes="message-content")
+                    await scroll_container.mount(new_content)
+                else:
+                    # 无代码块：直接更新 Markdown
+                    try:
+                        await content_widget.update(display_text)
+                    except Exception:
+                        await content_widget.update(f"```\n{display_text}\n```")
 
                 del self.stream_widgets[sender_name]
             else:
-                if sender_name and display_text:
-                    sender_widget = Static(
-                        sender_name,
-                        classes="message-sender completed"
-                    )
+                # 非流式消息直接添加
+                sender_widget = Static(
+                    sender_name,
+                    classes="message-sender completed"
+                )
+
+                # 检查是否有代码块
+                has_code = bool(re.search(r'```\w*\n.*?```', display_text, re.DOTALL))
+
+                if has_code:
+                    content_widget = MessageWithCode(display_text, classes="message-content")
+                else:
                     content_widget = Markdown(display_text, classes="message-content")
 
-                    await scroll_container.mount(sender_widget)
-                    await scroll_container.mount(content_widget)
+                await scroll_container.mount(sender_widget)
+                await scroll_container.mount(content_widget)
 
             scroll_container.scroll_end(animate=False)
         else:
+            # 流式更新中
             if sender_name in self.stream_widgets:
                 widgets = self.stream_widgets[sender_name]
                 content_widget = widgets["content"]
 
+                # 流式更新：直接更新 Markdown（不添加复制按钮）
                 try:
                     await content_widget.update(display_text)
                 except Exception:
                     await content_widget.update(f"```\n{display_text}\n```")
             else:
+                # 首次流式消息
                 sender_widget = Static(
                     f"{sender_name} ⚡",
                     classes="message-sender streaming"
