@@ -4,9 +4,6 @@ Utility functions for the Ari project.
 import json
 from typing import Any
 
-from agentscope.message import Msg
-from agentscope.tool import ToolResponse
-
 
 def extract_json_from_response(response_content: Any) -> str:
     """
