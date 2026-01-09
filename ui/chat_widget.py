@@ -52,10 +52,11 @@ class CodeBlockWithCopy(Container):
 
     CodeBlockWithCopy .copy-btn {
         dock: right;
-        width: 10;
+        width: 6;
         height: 1;
-        min-width: 10;
+        min-width: 6;
         background: $primary;
+        padding: 0;
     }
 
     CodeBlockWithCopy .copy-btn:hover {
@@ -80,32 +81,47 @@ class CodeBlockWithCopy(Container):
         super().__init__(**kwargs)
         self.code = code
         self.language = language
+        self._markdown_widget = None
 
     def compose(self) -> ComposeResult:
         """构建UI"""
         with Horizontal(classes="code-header"):
             yield Static(f"📝 {self.language or 'code'}", classes="code-lang")
-            yield Button(label="📋 复制", classes="copy-btn",compact=True, id=f"copy-{id(self)}")
+            yield Button(label="[copy]", classes="copy-btn", variant="primary", compact=True, id=f"copy-{id(self)}")
 
         # 使用 Markdown 渲染代码（保持高亮）
         code_md = f"```{self.language}\n{self.code}\n```"
         yield Markdown(code_md, classes="code-content")
 
+    def on_mount(self) -> None:
+        """缓存 Markdown 组件"""
+        self._markdown_widget = self.query_one(".code-content", Markdown)
+
+    def update_code(self, new_code: str):
+        """更新代码内容（不重建组件）"""
+        if self.code == new_code:
+            return
+
+        self.code = new_code
+        if self._markdown_widget:
+            code_md = f"```{self.language}\n{self.code}\n```"
+            self._markdown_widget.update(code_md)
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """处理复制"""
         if event.button.id == f"copy-{id(self)}":
             if copy_to_clipboard(self.code):
-                event.button.label = "✅ 已复制"
+                event.button.label = "[ok]"
             else:
-                event.button.label = "❌ 失败"
+                event.button.label = "[x]"
             self.set_timer(2, lambda: self._reset_button(event.button))
 
     def _reset_button(self, button: Button):
-        button.label = "📋 复制"
+        button.label = "[copy]"
 
 
 class MessageWithCode(Vertical):
-    """包含文本和代码块的消息容器"""
+    """包含文本和代码块的消息容器（优化版 - 支持增量更新）"""
 
     DEFAULT_CSS = """
     MessageWithCode {
@@ -124,7 +140,8 @@ class MessageWithCode(Vertical):
     def __init__(self, markdown_text: str, **kwargs):
         super().__init__(**kwargs)
         self.markdown_text = markdown_text
-        self.parts = self._split_content(markdown_text)
+        self.parts = []
+        self._part_widgets = []  # 缓存已渲染的组件
 
     def _split_content(self, text: str) -> list[dict]:
         """分割文本和代码块"""
@@ -159,20 +176,238 @@ class MessageWithCode(Vertical):
         return parts
 
     def compose(self) -> ComposeResult:
-        """渲染所有部分"""
-        if not self.parts:
-            # 没有代码块，直接渲染 Markdown
-            yield Markdown(self.markdown_text)
-        else:
-            # 逐个渲染文本和代码块
-            for part in self.parts:
+        """初始渲染"""
+        self.parts = self._split_content(self.markdown_text)
+
+        for part in self.parts:
+            if part['type'] == 'text':
+                widget = Markdown(part['content'])
+            elif part['type'] == 'code':
+                widget = CodeBlockWithCopy(
+                    code=part['content'],
+                    language=part['language']
+                )
+            self._part_widgets.append(widget)
+            yield widget
+
+    async def update_content(self, new_text: str):
+        """增量更新内容（避免闪屏）"""
+        if self.markdown_text == new_text:
+            return
+
+        self.markdown_text = new_text
+        new_parts = self._split_content(new_text)
+
+        # 比较新旧部分，只更新变化的部分
+        old_len = len(self.parts)
+        new_len = len(new_parts)
+
+        # 更新现有部分
+        for i in range(min(old_len, new_len)):
+            old_part = self.parts[i]
+            new_part = new_parts[i]
+
+            # 类型相同，更新内容
+            if old_part['type'] == new_part['type']:
+                if old_part['content'] != new_part['content']:
+                    widget = self._part_widgets[i]
+                    if new_part['type'] == 'text' and isinstance(widget, Markdown):
+                        widget.update(new_part['content'])
+                    elif new_part['type'] == 'code' and isinstance(widget, CodeBlockWithCopy):
+                        widget.update_code(new_part['content'])
+            else:
+                # 类型不同，需要重建（少见情况）
+                await self._rebuild_from_index(i, new_parts)
+                return
+
+        # 添加新增的部分
+        if new_len > old_len:
+            for i in range(old_len, new_len):
+                part = new_parts[i]
                 if part['type'] == 'text':
-                    yield Markdown(part['content'])
+                    widget = Markdown(part['content'])
                 elif part['type'] == 'code':
-                    yield CodeBlockWithCopy(
+                    widget = CodeBlockWithCopy(
                         code=part['content'],
                         language=part['language']
                     )
+                self._part_widgets.append(widget)
+                await self.mount(widget)
+
+        # 移除多余的部分
+        elif new_len < old_len:
+            for i in range(new_len, old_len):
+                widget = self._part_widgets[i]
+                await widget.remove()
+            self._part_widgets = self._part_widgets[:new_len]
+
+        self.parts = new_parts
+
+    async def _rebuild_from_index(self, start_index: int, new_parts: list[dict]):
+        """从指定索引重建（类型变化时的回退方案）"""
+        # 移除旧组件
+        for i in range(start_index, len(self._part_widgets)):
+            await self._part_widgets[i].remove()
+
+        self._part_widgets = self._part_widgets[:start_index]
+
+        # 添加新组件
+        for i in range(start_index, len(new_parts)):
+            part = new_parts[i]
+            if part['type'] == 'text':
+                widget = Markdown(part['content'])
+            elif part['type'] == 'code':
+                widget = CodeBlockWithCopy(
+                    code=part['content'],
+                    language=part['language']
+                )
+            self._part_widgets.append(widget)
+            await self.mount(widget)
+
+        self.parts = new_parts
+
+
+class MessageBlock(Container):
+    """单条消息块（发送者 + 内容 + 复制按钮）"""
+
+    DEFAULT_CSS = """
+    MessageBlock {
+        width: 100%;
+        height: auto;
+        margin-bottom: 1;
+    }
+
+    MessageBlock .message-header {
+        width: 100%;
+        height: 1;
+        margin-top: 1;
+    }
+
+    MessageBlock .message-copy-btn {
+        width: 8;
+        height: 1;
+        min-width: 8;
+        background: $surface-darken-1;
+        padding: 0;
+        margin-left: 1;
+    }
+
+    MessageBlock .message-copy-btn:hover {
+        background: $primary;
+    }
+
+    MessageBlock .message-sender {
+        color: $accent;
+        text-style: bold;
+        height: 1;
+        margin-left: 1;
+    }
+
+    MessageBlock .message-content {
+        width: 100%;
+        height: auto;
+        color: $text;
+    }
+
+    MessageBlock.streaming .message-sender {
+        color: $warning;
+    }
+
+    MessageBlock.completed .message-sender {
+        color: $accent;
+    }
+    """
+
+    def __init__(self, sender_name: str, content_text: str, is_streaming: bool = False, **kwargs):
+        super().__init__(**kwargs)
+        self.sender_name = sender_name
+        self.content_text = content_text
+        self.is_streaming = is_streaming
+        self.has_code = bool(re.search(r'```\w*\n.*?```', content_text, re.DOTALL))
+        self._content_widget = None  # 缓存内容组件
+        self._sender_widget = None  # 缓存发送者组件
+
+        if is_streaming:
+            self.add_class("streaming")
+        else:
+            self.add_class("completed")
+
+    def compose(self) -> ComposeResult:
+        """构建UI"""
+        # 消息头（复制按钮 + 发送者）
+        with Horizontal(classes="message-header"):
+            yield Button(label="[copy]", classes="message-copy-btn", variant="default", compact=True,
+                         id=f"msg-copy-{id(self)}")
+            sender_text = f"{self.sender_name} ⚡" if self.is_streaming else self.sender_name
+            yield Static(sender_text, classes="message-sender")
+
+        # 消息内容
+        if self.has_code:
+            yield MessageWithCode(self.content_text, classes="message-content")
+        else:
+            yield Markdown(self.content_text, classes="message-content")
+
+    def on_mount(self) -> None:
+        """挂载后缓存组件引用"""
+        self._sender_widget = self.query_one(".message-sender", Static)
+        self._content_widget = self.query_one(".message-content")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """处理复制整条消息"""
+        if event.button.id == f"msg-copy-{id(self)}":
+            if copy_to_clipboard(self.content_text):
+                event.button.label = "[ok]"
+            else:
+                event.button.label = "[x]"
+            self.set_timer(2, lambda: self._reset_button(event.button))
+
+    def _reset_button(self, button: Button):
+        button.label = "[copy]"
+
+    async def update_content(self, new_content: str, is_streaming: bool = False):
+        """更新消息内容（优化版 - 避免闪屏）"""
+        # 检查内容是否真的变化
+        if self.content_text == new_content and self.is_streaming == is_streaming:
+            return
+
+        old_is_streaming = self.is_streaming
+        self.content_text = new_content
+        self.is_streaming = is_streaming
+        new_has_code = bool(re.search(r'```\w*\n.*?```', new_content, re.DOTALL))
+
+        # 更新样式
+        if is_streaming:
+            self.remove_class("completed")
+            self.add_class("streaming")
+        else:
+            self.remove_class("streaming")
+            self.add_class("completed")
+
+        # 更新发送者文本（只在状态变化时更新）
+        if self._sender_widget and old_is_streaming != is_streaming:
+            sender_text = f"{self.sender_name} ⚡" if is_streaming else self.sender_name
+            self._sender_widget.update(sender_text)
+
+        # 内容类型变化：纯文本 ↔ 有代码
+        if new_has_code != self.has_code:
+            self.has_code = new_has_code
+            if self._content_widget:
+                await self._content_widget.remove()
+
+            if self.has_code:
+                new_widget = MessageWithCode(new_content, classes="message-content")
+            else:
+                new_widget = Markdown(new_content, classes="message-content")
+
+            await self.mount(new_widget)
+            self._content_widget = new_widget
+        else:
+            # 内容类型相同，增量更新
+            if isinstance(self._content_widget, Markdown):
+                self._content_widget.update(new_content)
+            elif isinstance(self._content_widget, MessageWithCode):
+                # 使用增量更新而不是重建
+                await self._content_widget.update_content(new_content)
 
 
 class ChatWidget(Widget):
@@ -190,35 +425,23 @@ class ChatWidget(Widget):
         padding: 1 2;
         background: $surface;
     }
-
-    .message-sender {
-        margin-top: 1;
-        color: $accent;
-        text-style: bold;
-    }
-
-    .message-content {
-        margin-bottom: 1;
-        color: $text;
-    }
-
-    .streaming .message-sender {
-        color: $warning;
-    }
-
-    .completed .message-sender {
-        color: $accent;
-    }
     """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.stream_widgets = {}
+        self.stream_blocks = {}
         self.border_title = "💬 聊天区"
+        self._scroll_timer = None
+        self._is_at_bottom = True
 
     def compose(self) -> ComposeResult:
         """构建UI组件"""
         yield VerticalScroll(id="chat-scroll")
+
+    def on_mount(self) -> None:
+        """挂载后监听滚动事件"""
+        scroll_container = self.query_one("#chat-scroll", VerticalScroll)
+        scroll_container.can_focus = False
 
     async def add_message(self, msg: Msg, last: bool):
         """
@@ -235,82 +458,55 @@ class ChatWidget(Widget):
 
         scroll_container = self.query_one("#chat-scroll", VerticalScroll)
 
+        msg_id = getattr(msg, 'id', None) or f"{sender_name}_{msg.timestamp if hasattr(msg, 'timestamp') else id(msg)}"
+
         if last:
             # 消息完成
-            if sender_name in self.stream_widgets:
-                widgets = self.stream_widgets[sender_name]
-                sender_widget = widgets["sender"]
-                content_widget = widgets["content"]
-
-                # 更新发送者状态
-                sender_widget.update(sender_name)
-                sender_widget.remove_class("streaming")
-                sender_widget.add_class("completed")
-
-                # 检查是否有代码块
-                has_code = bool(re.search(r'```\w*\n.*?```', display_text, re.DOTALL))
-
-                if has_code:
-                    # 有代码块：替换为带复制按钮的组件
-                    await content_widget.remove()
-                    new_content = MessageWithCode(display_text, classes="message-content")
-                    await scroll_container.mount(new_content)
-                else:
-                    # 无代码块：直接更新 Markdown
-                    try:
-                        await content_widget.update(display_text)
-                    except Exception:
-                        await content_widget.update(f"```\n{display_text}\n```")
-
-                del self.stream_widgets[sender_name]
+            if msg_id in self.stream_blocks:
+                message_block = self.stream_blocks[msg_id]
+                await message_block.update_content(display_text, is_streaming=False)
+                del self.stream_blocks[msg_id]
             else:
-                # 非流式消息直接添加
-                sender_widget = Static(
-                    sender_name,
-                    classes="message-sender completed"
+                message_block = MessageBlock(
+                    sender_name=sender_name,
+                    content_text=display_text,
+                    is_streaming=False
                 )
+                await scroll_container.mount(message_block)
 
-                # 检查是否有代码块
-                has_code = bool(re.search(r'```\w*\n.*?```', display_text, re.DOTALL))
-
-                if has_code:
-                    content_widget = MessageWithCode(display_text, classes="message-content")
-                else:
-                    content_widget = Markdown(display_text, classes="message-content")
-
-                await scroll_container.mount(sender_widget)
-                await scroll_container.mount(content_widget)
-
-            scroll_container.scroll_end(animate=False)
+            self._schedule_scroll()
         else:
             # 流式更新中
-            if sender_name in self.stream_widgets:
-                widgets = self.stream_widgets[sender_name]
-                content_widget = widgets["content"]
-
-                # 流式更新：直接更新 Markdown（不添加复制按钮）
-                try:
-                    await content_widget.update(display_text)
-                except Exception:
-                    await content_widget.update(f"```\n{display_text}\n```")
+            if msg_id in self.stream_blocks:
+                message_block = self.stream_blocks[msg_id]
+                await message_block.update_content(display_text, is_streaming=True)
             else:
-                # 首次流式消息
-                sender_widget = Static(
-                    f"{sender_name} ⚡",
-                    classes="message-sender streaming"
+                message_block = MessageBlock(
+                    sender_name=sender_name,
+                    content_text=display_text,
+                    is_streaming=True
                 )
+                self.stream_blocks[msg_id] = message_block
+                await scroll_container.mount(message_block)
 
-                content_widget = Markdown(display_text, classes="message-content")
+            self._schedule_scroll()
 
-                self.stream_widgets[sender_name] = {
-                    "sender": sender_widget,
-                    "content": content_widget
-                }
+    def _schedule_scroll(self):
+        """延迟滚动（防抖）"""
+        if self._scroll_timer is not None:
+            self.remove_timer(self._scroll_timer)
 
-                await scroll_container.mount(sender_widget)
-                await scroll_container.mount(content_widget)
+        self._scroll_timer = self.set_timer(0.05, self._do_scroll)
 
-            scroll_container.scroll_end(animate=False)
+    def _do_scroll(self):
+        """执行滚动"""
+        try:
+            scroll_container = self.query_one("#chat-scroll", VerticalScroll)
+            scroll_container.scroll_end(animate=False, force=True)
+        except Exception:
+            pass
+        finally:
+            self._scroll_timer = None
 
     def _parse_message(self, msg: Msg) -> tuple[str, str]:
         """
@@ -405,4 +601,7 @@ class ChatWidget(Widget):
         """清空所有消息"""
         scroll_container = self.query_one("#chat-scroll", VerticalScroll)
         await scroll_container.remove_children()
-        self.stream_widgets.clear()
+        self.stream_blocks.clear()
+        if self._scroll_timer is not None:
+            self.remove_timer(self._scroll_timer)
+            self._scroll_timer = None
