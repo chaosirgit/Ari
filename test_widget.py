@@ -17,6 +17,7 @@ from ui.task_list_widget import TaskListWidget
 from ui.thinking_widget import ThinkingWidget
 from ui.system_message_widget import SystemMessageWidget
 from ui.message_router import MessageRouter
+from ui.user_input_widget import UserInputWidget, UserInputSubmitted
 
 
 class MultiAgentApp(App):
@@ -25,8 +26,8 @@ class MultiAgentApp(App):
     CSS = """
     Screen {
         layout: grid;
-        grid-size: 3 2;
-        grid-rows: 1fr 4;
+        grid-size: 3 3;
+        grid-rows: 1fr 4 8;
         grid-columns: 2fr 1fr 1fr;
     }
 
@@ -54,6 +55,13 @@ class MultiAgentApp(App):
         height: 100%;
         border: solid magenta;
     }
+    
+    #user_input {
+        column-span: 3;
+        width: 100%;
+        height: 100%;
+        border: solid blue;
+    }
     """
 
     BINDINGS = [
@@ -67,14 +75,15 @@ class MultiAgentApp(App):
         yield TaskListWidget(id="tasks")
         yield ThinkingWidget(id="thinking")
         yield SystemMessageWidget(id="system_messages")
+        yield UserInputWidget(id="user_input")
         yield Footer()
 
     async def on_mount(self):
         logger.info("🚀 应用启动")
-        asyncio.create_task(self.run_agent_task())
-
-    async def run_agent_task(self):
-        """运行多智能体任务"""
+        # 不再自动运行任务，等待用户输入
+        
+    async def on_user_input_submitted(self, event: UserInputSubmitted):
+        """处理用户输入提交"""
         try:
             GlobalAgentRegistry._agents.clear()
 
@@ -83,21 +92,22 @@ class MultiAgentApp(App):
             task_widget = self.query_one("#tasks", TaskListWidget)
             thinking_widget = self.query_one("#thinking", ThinkingWidget)
             system_message_widget = self.query_one("#system_messages", SystemMessageWidget)
+            user_input_widget = self.query_one("#user_input", UserInputWidget)
 
             # 创建路由器 - 现在包含系统消息组件
             router = MessageRouter(chat_widget, task_widget, thinking_widget, system_message_widget)
 
-            # 初始化 Agent
-            ari = MainReActAgent()
-
             # 用户消息
             user_msg = Msg(
                 name="user",
-                content="我现在要测试一下多智能体的并行运行,你让规划Agent规划 5 个步骤, 2个有依赖,3个无依赖,比如,3个分别计算2+3,6+3,4+3,两个有依赖的计算 3 + 2 * 5",
+                content=event.content,
                 role="user"
             )
 
             await chat_widget.add_message(user_msg, last=True)
+
+            # 初始化 Agent
+            ari = MainReActAgent()
 
             # 调用 Agent
             main_task = ari(user_msg)
@@ -120,13 +130,21 @@ class MultiAgentApp(App):
         task_widget = self.query_one("#tasks", TaskListWidget)
         thinking_widget = self.query_one("#thinking", ThinkingWidget)
         system_message_widget = self.query_one("#system_messages", SystemMessageWidget)
+        user_input_widget = self.query_one("#user_input", UserInputWidget)
 
         asyncio.create_task(chat_widget.clear_messages())
         asyncio.create_task(task_widget.clear_tasks())
         asyncio.create_task(thinking_widget.clear_thinking())
         asyncio.create_task(system_message_widget.clear_messages())
+        asyncio.create_task(user_input_widget.clear())
 
 
 if __name__ == "__main__":
     app = MultiAgentApp()
+    # 启用 tokyo-night 主题（如果可用）
+    try:
+        app.theme = "tokyo-night"
+    except Exception:
+        # 如果主题不可用，使用默认主题
+        pass
     app.run()
