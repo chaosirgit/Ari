@@ -77,7 +77,11 @@ class MessageRouter:
         msg_name = msg.name
         logger.debug(f"📨 路由消息: name={msg_name}, last={last}")
 
-        # 提取思考过程（last=False 的工具调用 或 thinking 类型）
+        # 🔥 如果是最后一条消息，标记思考完成
+        if last and self.thinking_widget:
+            await self.thinking_widget.mark_thinking_complete(msg_name)
+
+        # 提取思考过程
         if not last:
             await self._extract_thinking(msg)
 

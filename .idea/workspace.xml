@@ -6,25 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="8333f56a-3ea7-4d6e-9c5f-b57f3d37cf2c" name="更改" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/main_agent.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/main_agent.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logs/debug_log.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/debug_log.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/329d4b8ffbb6794ffc890c26d345f0e6fea04500a1b40e414c121a5284afdd31.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/3b8519ba9ff1cee39f2c06019334f18b1a2effb0b41c542b5766ed08ff46b890.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/8819e016071282462d52601d211b207c2a86110063d4e374e292045c4bc7514f.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/9ca08ff0cdec9667bf7088daaf17d3d14e54f69860505eb12829a3c6e206a427.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/a5c342c667d70d6940bf73f039211585995f4d209407123c9361667ee102c606.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/a865708da2bcb487b61f1ae02631082704f3b7f7690374e19e8df027de889e9c.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/d4513a24c1ff9fcd224781d5812d62786296dcf9417a596fc57e545e5f45d9e2.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/eab233be811a286360cbd76671f6d96dd2f92130fa1124dbba3e179fb7a1521f.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/ee8e72bdf66168f501470348df63e790a6c3b02644148586b2b8c61223f767dd.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/f074c08b438e05b00b05ad806e889efe8be6d7133e64c1988e22f541176284fe.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/memory/vector_store/.lock" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/memory/vector_store/collection/mem0/storage.sqlite" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/memory/vector_store/meta.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/test_widget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tools/create_worker.py" beforeDir="false" afterPath="$PROJECT_DIR$/tools/create_worker.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ui/message_router.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/message_router.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui/task_list_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/task_list_widget.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ui/thinking_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/thinking_widget.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
