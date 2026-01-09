@@ -9,7 +9,6 @@ from datetime import datetime
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Static
 from textual.widgets import TextArea
-from textual.containers import Container, Vertical
 
 from agentscope.message import Msg
 from core.main_agent import MainReActAgent
@@ -80,7 +79,7 @@ class MultiAgentApp(App):
     Screen {
         layout: grid;
         grid-size: 2 6;
-        grid-rows: 1fr 10fr 5fr 3fr 1fr 1fr;
+        grid-rows: 1fr 10fr 5fr 4fr 3fr 1fr;
         grid-columns: 3fr 1fr;
     }
 

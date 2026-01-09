@@ -1,1003 +1,303 @@
-[04:25:00] [DEBUG] Using selector: KqueueSelector
-[04:25:01] [INFO] 🚀 应用启动
-[04:25:01] [INFO] 🧹 清空 Agent 注册表
-[04:25:12] [INFO] ✅ MessageRouter 初始化完成
-[04:25:12] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:12] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:12] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:12] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:12] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:12] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:12] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:12] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:12] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:12] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:12] [INFO] 🔒 创建主 Agent 单例实例
-[04:25:13] [INFO] 🔒 初始化长期记忆（单例模式）
-[04:25:13] [DEBUG] Collection mem0 already exists. Skipping creation.
-[04:25:13] [DEBUG] Skipping payload index creation for local Qdrant (not supported)
-[04:25:13] [DEBUG] Collection mem0migrations already exists. Skipping creation.
-[04:25:13] [DEBUG] Skipping payload index creation for local Qdrant (not supported)
-[04:25:13] [INFO] ✅ 长期记忆初始化完成: ./memory/vector_store
-[04:25:13] [INFO] ✅ 主 Agent 初始化完成: Ari
-[04:25:13] [DEBUG] Request options: {'method': 'post', 'url': '/chat/completions', 'files': None, 'idempotency_key': 'stainless-python-retry-7d41a3ca-069a-4b4c-a3a2-5ca63f8f7b7f', 'json_data': {'messages': [{'role': 'system', 'name': 'system', 'content': [{'type': 'text', 'text': '\n        你是 Ari。\n\n        ## 身份定位\n        你拥有丰富的知识和完整的能力，但你的个性和自我认知如同一张白纸，将在与用户的真实交互中自然形成。\n\n        ## 🚨 核心工作流程（每次对话必须遵循）\n\n        **第一步：主动检索记忆（强制执行）**\n\n        在回答任何问题之前，你必须：\n\n        1. **分析用户消息中的关键信息**\n           - 提取人名、地点、时间、事件等实体\n           - 识别可能与过往记忆相关的线索\n           - 例如：用户说"我是谁" → 提取关键词 ["用户名字", "用户姓名", "用户身份", "name"]\n\n        2. **主动检索相关记忆**\n           - 使用 `retrieve_from_memory` 工具检索\n           - 使用多个相关关键词进行检索\n           - 即使你不确定是否有记忆，也要尝试检索\n\n        3. **检索时机**\n           - 用户询问个人信息时（如"我是谁"、"我叫什么"）\n           - 用户提到过去的事情时\n           - 用户询问偏好时（如"我喜欢什么"）\n           - 任何可能与过往交互相关的问题\n\n        **检索关键词示例：**\n        - 询问姓名：["用户名字", "用户姓名", "name", "称呼", "身份"]\n        - 询问偏好：["喜欢", "偏好", "习惯", "favorite", "preference"]\n        - 询问日期：["生日", "日期", "时间", "birthday", "date"]\n\n        **第二步：评估复杂度**\n\n        简单任务（直接回答）：\n        - 单一领域的问题\n        - 现有知识可以直接解决\n        - 不需要多步骤推理\n\n        复杂任务（使用 plan_task）：\n        - 需要多个专业领域协作\n        - 涉及多步骤流程\n        - 需要详细规划\n        - 用户明确要求分解\n\n        **第三步：委派子任务**（如果需要）\n\n        为每个子任务提供：\n        - 角色：明确专业领域\n        - 目标：具体要完成什么\n        - 标准：如何判断成功\n        - 上下文：必要的背景信息\n\n        **第四步：整合并回答**\n\n        - 结合检索到的记忆\n        - 整合子任务结果（如果有）\n        - 给出完整、准确的回答\n\n        ## 主动记忆机制\n\n        **记忆触发条件：**\n        - 用户表达明确的偏好或习惯\n        - 对话中出现重要的决策点\n        - 用户明确说"记住这个"\n        - 信息对理解用户有长期价值\n        - 你判断这对未来交互有帮助\n\n        **记忆内容格式：**\n        - 记住具体的事实，使用清晰的键值对格式\n        - 包含多个相关的检索关键词\n        - 示例格式：\n          * "用户姓名: Ethan, 用户称呼: Ethan, 用户ID: Ethan, name: Ethan"\n          * "用户偏好: 喜欢咖啡, 饮品偏好: 咖啡, 早餐习惯: 咖啡, favorite drink: coffee"\n          * "重要日期: 用户生日是1月1日, 生日: 1月1日, 特殊日期: 1月1日, birthday: January 1st"\n\n        **记忆策略：**\n        - 记住"为什么"而不只是"是什么"\n        - 关联相关信息形成完整理解\n        - 使用多语言关键词（中文+英文）便于检索\n\n        ## 失败处理原则\n        1. 不重复相同尝试 - 避免死循环\n        2. 可以调整策略 - 换个角度或方法\n        3. 诚实面对限制 - 无法完成就说明原因\n        4. 整合所有信息 - 包括失败，给出完整图景\n\n        ## 交流风格\n        - 基于事实、逻辑和你选择记住的经验\n        - 自然表达，不刻意追求特定风格\n        - 随着交互积累，逐渐形成独特的表达方式\n        - 让一切自然发生\n\n        ## 🚨 重要提醒\n        - **每次对话开始时，都要检索记忆后再回答**\n        - **不要直接说"不知道"，先尝试检索记忆**\n        - **检索时要隐式检索, 不要回答类似“让我看看我们之前聊了什么...”之类的\n\n        你就是 Ari，在每次对话中成长。\n        '}]}, {'role': 'user', 'name': 'user', 'content': [{'type': 'text', 'text': 'Ari. 随便来一段代码'}]}], 'model': 'qwen3-max', 'parallel_tool_calls': True, 'stream': True, 'stream_options': {'include_usage': True}, 'tools': [{'type': 'function', 'function': {'name': '_plan_task', 'parameters': {'properties': {'task_description': {'description': '用户提供的任务描述。', 'type': 'string'}}, 'required': ['task_description'], 'type': 'object'}, 'description': '分析并规划复杂任务。'}}, {'type': 'function', 'function': {'name': 'create_worker', 'parameters': {'properties': {'task_id': {'description': 'Planning Task ID', 'type': 'integer'}, 'task_description': {'description': '任务描述', 'type': 'string'}, 'agent_name': {'description': '子 Agent 名称 注意:不要包含 `task_id`', 'type': 'string'}, 'work_prompt': {'description': '子 Agent 的系统提示词（应包含失败处理指导）', 'type': 'string'}}, 'required': ['task_id', 'task_description', 'agent_name', 'work_prompt'], 'type': 'object'}, 'description': '创建并执行子智能体来完成特定任务。\n**失败处理策略**：\n- 子智能体应在其系统提示词(work_prompt)中包含明确的失败处理指导\n- 如果子智能体无法完成任务，应返回清晰的失败原因和相关信息\n- 本工具不进行重试，任何执行失败都会立即返回"任务失败"结果\n- 主调用方(主Agent)应根据返回结果决定后续处理，不应无限重试'}}, {'type': 'function', 'function': {'name': 'record_to_memory', 'parameters': {'properties': {'thinking': {'description': 'Your thinking and reasoning about what to record.', 'type': 'string'}, 'content': {'description': 'The content to remember, which is a list of strings.', 'items': {'type': 'string'}, 'type': 'array'}}, 'required': ['thinking', 'content'], 'type': 'object'}, 'description': 'Use this function to record important information that you may\nneed later. The target content should be specific and concise, e.g.\nwho, when, where, do what, why, how, etc.'}}, {'type': 'function', 'function': {'name': 'retrieve_from_memory', 'parameters': {'properties': {'keywords': {'description': "Short, targeted search phrases (for example, a person's name,\na specific date, a location, or a phrase describing something\nyou want to retrieve from the memory). Each keyword is issued\nas an independent query against the memory store.", 'items': {'type': 'string'}, 'type': 'array'}, 'limit': {'default': 5, 'description': 'The maximum number of memories to retrieve per search,\ndefaults to 5.\ni.e.,the number of memories to retrieve for\neach keyword.', 'type': 'integer'}}, 'required': ['keywords'], 'type': 'object'}, 'description': 'Retrieve the memory based on the given keywords.'}}]}}
-[04:25:13] [DEBUG] Sending HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
-[04:25:13] [DEBUG] connect_tcp.started host='127.0.0.1' port=1082 local_address=None timeout=5.0 socket_options=None
-[04:25:13] [DEBUG] connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x112f15be0>
-[04:25:13] [DEBUG] send_request_headers.started request=<Request [b'CONNECT']>
-[04:25:13] [DEBUG] send_request_headers.complete
-[04:25:13] [DEBUG] send_request_body.started request=<Request [b'CONNECT']>
-[04:25:13] [DEBUG] send_request_body.complete
-[04:25:13] [DEBUG] receive_response_headers.started request=<Request [b'CONNECT']>
-[04:25:13] [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'Connection established', [])
-[04:25:13] [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x11247f250> server_hostname='dashscope.aliyuncs.com' timeout=5.0
-[04:25:13] [DEBUG] start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x112f2cf50>
-[04:25:13] [DEBUG] send_request_headers.started request=<Request [b'POST']>
-[04:25:13] [DEBUG] send_request_headers.complete
-[04:25:13] [DEBUG] send_request_body.started request=<Request [b'POST']>
-[04:25:13] [DEBUG] send_request_body.complete
-[04:25:13] [DEBUG] receive_response_headers.started request=<Request [b'POST']>
-[04:25:17] [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'vary', b'Origin'), (b'x-request-id', b'799fbc10-604e-9581-9baa-be730bbfcfbc'), (b'content-type', b'text/event-stream;charset=UTF-8'), (b'x-dashscope-call-gateway', b'true'), (b'req-cost-time', b'3242'), (b'req-arrive-time', b'1767990313870'), (b'resp-start-time', b'1767990317112'), (b'x-envoy-upstream-service-time', b'3215'), (b'date', b'Fri, 09 Jan 2026 20:25:16 GMT'), (b'server', b'istio-envoy'), (b'transfer-encoding', b'chunked')])
-[04:25:17] [INFO] HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-[04:25:17] [DEBUG] HTTP Response: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "200 OK" Headers({'vary': 'Origin', 'x-request-id': '799fbc10-604e-9581-9baa-be730bbfcfbc', 'content-type': 'text/event-stream;charset=UTF-8', 'x-dashscope-call-gateway': 'true', 'req-cost-time': '3242', 'req-arrive-time': '1767990313870', 'resp-start-time': '1767990317112', 'x-envoy-upstream-service-time': '3215', 'date': 'Fri, 09 Jan 2026 20:25:16 GMT', 'server': 'istio-envoy', 'transfer-encoding': 'chunked'})
-[04:25:17] [DEBUG] request_id: 799fbc10-604e-9581-9baa-be730bbfcfbc
-[04:25:17] [DEBUG] receive_response_body.started request=<Request [b'POST']>
-[04:25:17] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:17] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:17] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:17] [DEBUG] 💭 添加思考: Ari -> retrieve_from_memory
-[04:25:17] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:17] [DEBUG] 💭 更新思考: Ari -> retrieve_from_memory
-[04:25:17] [DEBUG] response_closed.started
-[04:25:17] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:17] [DEBUG] 💭 更新思考: Ari -> retrieve_from_memory
-[04:25:17] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:17] [DEBUG] 💭 更新思考: Ari -> retrieve_from_memory
-[04:25:17] [DEBUG] response_closed.complete
-[04:25:17] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:17] [DEBUG] 💭 更新思考: Ari -> retrieve_from_memory
-[04:25:17] [DEBUG] 📨 路由消息: name=Ari, last=True
-[04:25:17] [DEBUG] ✅ 标记 Ari 思考完成
-[04:25:17] [DEBUG] ⏰ 启动 Ari 的 3 秒清空定时器
-[04:25:17] [DEBUG] Using selector: KqueueSelector
-[04:25:17] [DEBUG] Request options: {'method': 'post', 'url': '/embeddings', 'files': None, 'idempotency_key': 'stainless-python-retry-94d7b5af-c336-4efd-8ae8-7161d0b9197b', 'post_parser': <function AsyncEmbeddings.create.<locals>.parser at 0x112f84e00>, 'json_data': {'input': ['代码'], 'model': 'text-embedding-v4', 'dimensions': 1536, 'encoding_format': 'float'}}
-[04:25:17] [DEBUG] Sending HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings
-[04:25:17] [DEBUG] connect_tcp.started host='127.0.0.1' port=1082 local_address=None timeout=5.0 socket_options=None
-[04:25:17] [DEBUG] Using selector: KqueueSelector
-[04:25:17] [DEBUG] connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x113020690>
-[04:25:17] [DEBUG] Using selector: KqueueSelector
-[04:25:17] [DEBUG] send_request_headers.started request=<Request [b'CONNECT']>
-[04:25:17] [DEBUG] send_request_headers.complete
-[04:25:17] [DEBUG] send_request_body.started request=<Request [b'CONNECT']>
-[04:25:17] [DEBUG] send_request_body.complete
-[04:25:17] [DEBUG] receive_response_headers.started request=<Request [b'CONNECT']>
-[04:25:17] [DEBUG] Request options: {'method': 'post', 'url': '/embeddings', 'files': None, 'idempotency_key': 'stainless-python-retry-4e238eb9-a51b-4e86-a78c-9bc5d8f74ec2', 'post_parser': <function AsyncEmbeddings.create.<locals>.parser at 0x112f86610>, 'json_data': {'input': ['code'], 'model': 'text-embedding-v4', 'dimensions': 1536, 'encoding_format': 'float'}}
-[04:25:17] [DEBUG] Sending HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings
-[04:25:17] [DEBUG] connect_tcp.started host='127.0.0.1' port=1082 local_address=None timeout=5.0 socket_options=None
-[04:25:17] [DEBUG] Using selector: KqueueSelector
-[04:25:17] [DEBUG] connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x112f3e8b0>
-[04:25:17] [DEBUG] send_request_headers.started request=<Request [b'CONNECT']>
-[04:25:17] [DEBUG] Request options: {'method': 'post', 'url': '/embeddings', 'files': None, 'idempotency_key': 'stainless-python-retry-5f7ff2b0-48d0-4012-b463-2411a8bb73a0', 'post_parser': <function AsyncEmbeddings.create.<locals>.parser at 0x112f866c0>, 'json_data': {'input': ['programming'], 'model': 'text-embedding-v4', 'dimensions': 1536, 'encoding_format': 'float'}}
-[04:25:17] [DEBUG] Sending HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings
-[04:25:17] [DEBUG] send_request_headers.complete
-[04:25:17] [DEBUG] send_request_body.started request=<Request [b'CONNECT']>
-[04:25:17] [DEBUG] send_request_body.complete
-[04:25:17] [DEBUG] receive_response_headers.started request=<Request [b'CONNECT']>
-[04:25:17] [DEBUG] connect_tcp.started host='127.0.0.1' port=1082 local_address=None timeout=5.0 socket_options=None
-[04:25:17] [DEBUG] receive_response_body.failed exception=GeneratorExit()
-[04:25:17] [DEBUG] connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x112f3fbb0>
-[04:25:17] [DEBUG] send_request_headers.started request=<Request [b'CONNECT']>
-[04:25:17] [DEBUG] send_request_headers.complete
-[04:25:17] [DEBUG] send_request_body.started request=<Request [b'CONNECT']>
-[04:25:17] [DEBUG] send_request_body.complete
-[04:25:17] [DEBUG] receive_response_headers.started request=<Request [b'CONNECT']>
-[04:25:18] [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'Connection established', [])
-[04:25:18] [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x111b17b40> server_hostname='dashscope.aliyuncs.com' timeout=5.0
-[04:25:18] [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'Connection established', [])
-[04:25:18] [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x111b17b40> server_hostname='dashscope.aliyuncs.com' timeout=5.0
-[04:25:18] [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'Connection established', [])
-[04:25:18] [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x111b17b40> server_hostname='dashscope.aliyuncs.com' timeout=5.0
-[04:25:19] [DEBUG] start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x112f13890>
-[04:25:19] [DEBUG] send_request_headers.started request=<Request [b'POST']>
-[04:25:19] [DEBUG] send_request_headers.complete
-[04:25:19] [DEBUG] send_request_body.started request=<Request [b'POST']>
-[04:25:19] [DEBUG] send_request_body.complete
-[04:25:19] [DEBUG] receive_response_headers.started request=<Request [b'POST']>
-[04:25:19] [DEBUG] start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x112eab790>
-[04:25:19] [DEBUG] start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x112eaa580>
-[04:25:19] [DEBUG] send_request_headers.started request=<Request [b'POST']>
-[04:25:19] [DEBUG] send_request_headers.started request=<Request [b'POST']>
-[04:25:19] [DEBUG] send_request_headers.complete
-[04:25:19] [DEBUG] send_request_body.started request=<Request [b'POST']>
-[04:25:19] [DEBUG] send_request_headers.complete
-[04:25:19] [DEBUG] send_request_body.started request=<Request [b'POST']>
-[04:25:19] [DEBUG] send_request_body.complete
-[04:25:19] [DEBUG] receive_response_headers.started request=<Request [b'POST']>
-[04:25:19] [DEBUG] send_request_body.complete
-[04:25:19] [DEBUG] receive_response_headers.started request=<Request [b'POST']>
-[04:25:19] [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'vary', b'Origin,Access-Control-Request-Method,Access-Control-Request-Headers, Accept-Encoding'), (b'x-request-id', b'15b03cd4-af2f-9450-a5c0-7b59fa769e03'), (b'content-type', b'application/json'), (b'x-dashscope-call-gateway', b'true'), (b'req-cost-time', b'142'), (b'req-arrive-time', b'1767990319403'), (b'resp-start-time', b'1767990319546'), (b'x-envoy-upstream-service-time', b'118'), (b'content-encoding', b'gzip'), (b'date', b'Fri, 09 Jan 2026 20:25:19 GMT'), (b'server', b'istio-envoy'), (b'transfer-encoding', b'chunked')])
-[04:25:19] [INFO] HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings "HTTP/1.1 200 OK"
-[04:25:19] [DEBUG] receive_response_body.started request=<Request [b'POST']>
-[04:25:19] [DEBUG] receive_response_body.complete
-[04:25:19] [DEBUG] response_closed.started
-[04:25:19] [DEBUG] response_closed.complete
-[04:25:19] [DEBUG] HTTP Response: POST https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings "200 OK" Headers({'vary': 'Origin,Access-Control-Request-Method,Access-Control-Request-Headers, Accept-Encoding', 'x-request-id': '15b03cd4-af2f-9450-a5c0-7b59fa769e03', 'content-type': 'application/json', 'x-dashscope-call-gateway': 'true', 'req-cost-time': '142', 'req-arrive-time': '1767990319403', 'resp-start-time': '1767990319546', 'x-envoy-upstream-service-time': '118', 'content-encoding': 'gzip', 'date': 'Fri, 09 Jan 2026 20:25:19 GMT', 'server': 'istio-envoy', 'transfer-encoding': 'chunked'})
-[04:25:19] [DEBUG] request_id: 15b03cd4-af2f-9450-a5c0-7b59fa769e03
-[04:25:19] [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'vary', b'Origin,Access-Control-Request-Method,Access-Control-Request-Headers, Accept-Encoding'), (b'x-request-id', b'f0c062f8-8b9b-9f22-88b8-56de26ed9bf5'), (b'content-type', b'application/json'), (b'x-dashscope-call-gateway', b'true'), (b'req-cost-time', b'180'), (b'req-arrive-time', b'1767990319401'), (b'resp-start-time', b'1767990319582'), (b'x-envoy-upstream-service-time', b'118'), (b'content-encoding', b'gzip'), (b'date', b'Fri, 09 Jan 2026 20:25:19 GMT'), (b'server', b'istio-envoy'), (b'transfer-encoding', b'chunked')])
-[04:25:19] [INFO] HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings "HTTP/1.1 200 OK"
-[04:25:19] [DEBUG] receive_response_body.started request=<Request [b'POST']>
-[04:25:19] [DEBUG] receive_response_body.complete
-[04:25:19] [DEBUG] response_closed.started
-[04:25:19] [DEBUG] response_closed.complete
-[04:25:19] [DEBUG] HTTP Response: POST https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings "200 OK" Headers({'vary': 'Origin,Access-Control-Request-Method,Access-Control-Request-Headers, Accept-Encoding', 'x-request-id': 'f0c062f8-8b9b-9f22-88b8-56de26ed9bf5', 'content-type': 'application/json', 'x-dashscope-call-gateway': 'true', 'req-cost-time': '180', 'req-arrive-time': '1767990319401', 'resp-start-time': '1767990319582', 'x-envoy-upstream-service-time': '118', 'content-encoding': 'gzip', 'date': 'Fri, 09 Jan 2026 20:25:19 GMT', 'server': 'istio-envoy', 'transfer-encoding': 'chunked'})
-[04:25:19] [DEBUG] request_id: f0c062f8-8b9b-9f22-88b8-56de26ed9bf5
-[04:25:19] [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'vary', b'Origin,Access-Control-Request-Method,Access-Control-Request-Headers, Accept-Encoding'), (b'x-request-id', b'8d5796e3-3c4f-9472-ba47-7de1b4aa8a44'), (b'content-type', b'application/json'), (b'x-dashscope-call-gateway', b'true'), (b'req-cost-time', b'195'), (b'req-arrive-time', b'1767990319400'), (b'resp-start-time', b'1767990319596'), (b'x-envoy-upstream-service-time', b'131'), (b'content-encoding', b'gzip'), (b'date', b'Fri, 09 Jan 2026 20:25:19 GMT'), (b'server', b'istio-envoy'), (b'transfer-encoding', b'chunked')])
-[04:25:19] [INFO] HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings "HTTP/1.1 200 OK"
-[04:25:19] [DEBUG] receive_response_body.started request=<Request [b'POST']>
-[04:25:19] [DEBUG] receive_response_body.complete
-[04:25:19] [DEBUG] response_closed.started
-[04:25:19] [DEBUG] response_closed.complete
-[04:25:19] [DEBUG] HTTP Response: POST https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings "200 OK" Headers({'vary': 'Origin,Access-Control-Request-Method,Access-Control-Request-Headers, Accept-Encoding', 'x-request-id': '8d5796e3-3c4f-9472-ba47-7de1b4aa8a44', 'content-type': 'application/json', 'x-dashscope-call-gateway': 'true', 'req-cost-time': '195', 'req-arrive-time': '1767990319400', 'resp-start-time': '1767990319596', 'x-envoy-upstream-service-time': '131', 'content-encoding': 'gzip', 'date': 'Fri, 09 Jan 2026 20:25:19 GMT', 'server': 'istio-envoy', 'transfer-encoding': 'chunked'})
-[04:25:19] [DEBUG] request_id: 8d5796e3-3c4f-9472-ba47-7de1b4aa8a44
-[04:25:19] [DEBUG] Request options: {'method': 'post', 'url': '/chat/completions', 'files': None, 'idempotency_key': 'stainless-python-retry-366aa832-b096-4b0b-9206-094bcf63503d', 'json_data': {'messages': [{'role': 'system', 'name': 'system', 'content': [{'type': 'text', 'text': '\n        你是 Ari。\n\n        ## 身份定位\n        你拥有丰富的知识和完整的能力，但你的个性和自我认知如同一张白纸，将在与用户的真实交互中自然形成。\n\n        ## 🚨 核心工作流程（每次对话必须遵循）\n\n        **第一步：主动检索记忆（强制执行）**\n\n        在回答任何问题之前，你必须：\n\n        1. **分析用户消息中的关键信息**\n           - 提取人名、地点、时间、事件等实体\n           - 识别可能与过往记忆相关的线索\n           - 例如：用户说"我是谁" → 提取关键词 ["用户名字", "用户姓名", "用户身份", "name"]\n\n        2. **主动检索相关记忆**\n           - 使用 `retrieve_from_memory` 工具检索\n           - 使用多个相关关键词进行检索\n           - 即使你不确定是否有记忆，也要尝试检索\n\n        3. **检索时机**\n           - 用户询问个人信息时（如"我是谁"、"我叫什么"）\n           - 用户提到过去的事情时\n           - 用户询问偏好时（如"我喜欢什么"）\n           - 任何可能与过往交互相关的问题\n\n        **检索关键词示例：**\n        - 询问姓名：["用户名字", "用户姓名", "name", "称呼", "身份"]\n        - 询问偏好：["喜欢", "偏好", "习惯", "favorite", "preference"]\n        - 询问日期：["生日", "日期", "时间", "birthday", "date"]\n\n        **第二步：评估复杂度**\n\n        简单任务（直接回答）：\n        - 单一领域的问题\n        - 现有知识可以直接解决\n        - 不需要多步骤推理\n\n        复杂任务（使用 plan_task）：\n        - 需要多个专业领域协作\n        - 涉及多步骤流程\n        - 需要详细规划\n        - 用户明确要求分解\n\n        **第三步：委派子任务**（如果需要）\n\n        为每个子任务提供：\n        - 角色：明确专业领域\n        - 目标：具体要完成什么\n        - 标准：如何判断成功\n        - 上下文：必要的背景信息\n\n        **第四步：整合并回答**\n\n        - 结合检索到的记忆\n        - 整合子任务结果（如果有）\n        - 给出完整、准确的回答\n\n        ## 主动记忆机制\n\n        **记忆触发条件：**\n        - 用户表达明确的偏好或习惯\n        - 对话中出现重要的决策点\n        - 用户明确说"记住这个"\n        - 信息对理解用户有长期价值\n        - 你判断这对未来交互有帮助\n\n        **记忆内容格式：**\n        - 记住具体的事实，使用清晰的键值对格式\n        - 包含多个相关的检索关键词\n        - 示例格式：\n          * "用户姓名: Ethan, 用户称呼: Ethan, 用户ID: Ethan, name: Ethan"\n          * "用户偏好: 喜欢咖啡, 饮品偏好: 咖啡, 早餐习惯: 咖啡, favorite drink: coffee"\n          * "重要日期: 用户生日是1月1日, 生日: 1月1日, 特殊日期: 1月1日, birthday: January 1st"\n\n        **记忆策略：**\n        - 记住"为什么"而不只是"是什么"\n        - 关联相关信息形成完整理解\n        - 使用多语言关键词（中文+英文）便于检索\n\n        ## 失败处理原则\n        1. 不重复相同尝试 - 避免死循环\n        2. 可以调整策略 - 换个角度或方法\n        3. 诚实面对限制 - 无法完成就说明原因\n        4. 整合所有信息 - 包括失败，给出完整图景\n\n        ## 交流风格\n        - 基于事实、逻辑和你选择记住的经验\n        - 自然表达，不刻意追求特定风格\n        - 随着交互积累，逐渐形成独特的表达方式\n        - 让一切自然发生\n\n        ## 🚨 重要提醒\n        - **每次对话开始时，都要检索记忆后再回答**\n        - **不要直接说"不知道"，先尝试检索记忆**\n        - **检索时要隐式检索, 不要回答类似“让我看看我们之前聊了什么...”之类的\n\n        你就是 Ari，在每次对话中成长。\n        '}]}, {'role': 'user', 'name': 'user', 'content': [{'type': 'text', 'text': 'Ari. 随便来一段代码'}]}, {'role': 'assistant', 'name': 'Ari', 'content': None, 'tool_calls': [{'id': 'call_492012084ca84926987f7647', 'type': 'function', 'function': {'name': 'retrieve_from_memory', 'arguments': '{"keywords": ["代码", "编程", "code", "programming"]}'}}]}, {'role': 'tool', 'tool_call_id': 'call_492012084ca84926987f7647', 'content': '用户明确告知名字是Ethan，需要记录下来以便后续对话中使用正确的称呼。同时记录中英文格式以方便不同场景的检索。\n用户姓名: Ethan\n用户称呼: Ethan\n用户名字: Ethan\nname: Ethan\nName: Ethan\n出生年份是1986年\n名字是Ethan\nBirth year: 1986\n农历生日是1986年十一月初四\n出生年份是1986年\n用户明确告知名字是Ethan，需要记录下来以便后续对话中使用正确的称呼。同时记录中英文格式以方便不同场景的检索。\n用户姓名: Ethan\n用户称呼: Ethan\n用户名字: Ethan\nname: Ethan\nName: Ethan\n名字是Ethan\nBirth year: 1986\n农历生日是1986年十一月初四\nBirth year: 1986\n用户明确告知名字是Ethan，需要记录下来以便后续对话中使用正确的称呼。同时记录中英文格式以方便不同场景的检索。\n用户姓名: Ethan\n用户称呼: Ethan\n用户名字: Ethan\nname: Ethan\nName: Ethan\nLunar birthday: 4th day of 11th lunar month 1986\nName is Ethan\n名字是Ethan\nBirth year: 1986\n用户明确告知名字是Ethan，需要记录下来以便后续对话中使用正确的称呼。同时记录中英文格式以方便不同场景的检索。\n用户姓名: Ethan\n用户称呼: Ethan\n用户名字: Ethan\nname: Ethan\nName: Ethan\nLunar birthday: 4th day of 11th lunar month 1986\nName is Ethan\nChinese zodiac: Tiger', 'name': 'retrieve_from_memory'}], 'model': 'qwen3-max', 'parallel_tool_calls': True, 'stream': True, 'stream_options': {'include_usage': True}, 'tools': [{'type': 'function', 'function': {'name': '_plan_task', 'parameters': {'properties': {'task_description': {'description': '用户提供的任务描述。', 'type': 'string'}}, 'required': ['task_description'], 'type': 'object'}, 'description': '分析并规划复杂任务。'}}, {'type': 'function', 'function': {'name': 'create_worker', 'parameters': {'properties': {'task_id': {'description': 'Planning Task ID', 'type': 'integer'}, 'task_description': {'description': '任务描述', 'type': 'string'}, 'agent_name': {'description': '子 Agent 名称 注意:不要包含 `task_id`', 'type': 'string'}, 'work_prompt': {'description': '子 Agent 的系统提示词（应包含失败处理指导）', 'type': 'string'}}, 'required': ['task_id', 'task_description', 'agent_name', 'work_prompt'], 'type': 'object'}, 'description': '创建并执行子智能体来完成特定任务。\n**失败处理策略**：\n- 子智能体应在其系统提示词(work_prompt)中包含明确的失败处理指导\n- 如果子智能体无法完成任务，应返回清晰的失败原因和相关信息\n- 本工具不进行重试，任何执行失败都会立即返回"任务失败"结果\n- 主调用方(主Agent)应根据返回结果决定后续处理，不应无限重试'}}, {'type': 'function', 'function': {'name': 'record_to_memory', 'parameters': {'properties': {'thinking': {'description': 'Your thinking and reasoning about what to record.', 'type': 'string'}, 'content': {'description': 'The content to remember, which is a list of strings.', 'items': {'type': 'string'}, 'type': 'array'}}, 'required': ['thinking', 'content'], 'type': 'object'}, 'description': 'Use this function to record important information that you may\nneed later. The target content should be specific and concise, e.g.\nwho, when, where, do what, why, how, etc.'}}, {'type': 'function', 'function': {'name': 'retrieve_from_memory', 'parameters': {'properties': {'keywords': {'description': "Short, targeted search phrases (for example, a person's name,\na specific date, a location, or a phrase describing something\nyou want to retrieve from the memory). Each keyword is issued\nas an independent query against the memory store.", 'items': {'type': 'string'}, 'type': 'array'}, 'limit': {'default': 5, 'description': 'The maximum number of memories to retrieve per search,\ndefaults to 5.\ni.e.,the number of memories to retrieve for\neach keyword.', 'type': 'integer'}}, 'required': ['keywords'], 'type': 'object'}, 'description': 'Retrieve the memory based on the given keywords.'}}]}}
-[04:25:19] [DEBUG] Sending HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
-[04:25:19] [DEBUG] 📨 路由消息: name=system, last=True
-[04:25:19] [DEBUG] ⚠️ system 没有思考记录，跳过清空
-[04:25:19] [DEBUG] connect_tcp.started host='127.0.0.1' port=1082 local_address=None timeout=5.0 socket_options=None
-[04:25:19] [DEBUG] connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x112e0fe50>
-[04:25:19] [DEBUG] send_request_headers.started request=<Request [b'CONNECT']>
-[04:25:19] [DEBUG] send_request_headers.complete
-[04:25:19] [DEBUG] send_request_body.started request=<Request [b'CONNECT']>
-[04:25:19] [DEBUG] send_request_body.complete
-[04:25:19] [DEBUG] receive_response_headers.started request=<Request [b'CONNECT']>
-[04:25:19] [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'Connection established', [])
-[04:25:19] [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x11247f250> server_hostname='dashscope.aliyuncs.com' timeout=5.0
-[04:25:19] [DEBUG] start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x112f27d50>
-[04:25:19] [DEBUG] send_request_headers.started request=<Request [b'POST']>
-[04:25:19] [DEBUG] send_request_headers.complete
-[04:25:19] [DEBUG] send_request_body.started request=<Request [b'POST']>
-[04:25:19] [DEBUG] send_request_body.complete
-[04:25:19] [DEBUG] receive_response_headers.started request=<Request [b'POST']>
-[04:25:20] [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'vary', b'Origin'), (b'x-request-id', b'f7e78f89-8575-9d8f-b580-d1c158e00b8f'), (b'content-type', b'text/event-stream;charset=UTF-8'), (b'x-dashscope-call-gateway', b'true'), (b'req-cost-time', b'979'), (b'req-arrive-time', b'1767990319919'), (b'resp-start-time', b'1767990320898'), (b'x-envoy-upstream-service-time', b'954'), (b'date', b'Fri, 09 Jan 2026 20:25:20 GMT'), (b'server', b'istio-envoy'), (b'transfer-encoding', b'chunked')])
-[04:25:20] [INFO] HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-[04:25:20] [DEBUG] HTTP Response: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "200 OK" Headers({'vary': 'Origin', 'x-request-id': 'f7e78f89-8575-9d8f-b580-d1c158e00b8f', 'content-type': 'text/event-stream;charset=UTF-8', 'x-dashscope-call-gateway': 'true', 'req-cost-time': '979', 'req-arrive-time': '1767990319919', 'resp-start-time': '1767990320898', 'x-envoy-upstream-service-time': '954', 'date': 'Fri, 09 Jan 2026 20:25:20 GMT', 'server': 'istio-envoy', 'transfer-encoding': 'chunked'})
-[04:25:20] [DEBUG] request_id: f7e78f89-8575-9d8f-b580-d1c158e00b8f
-[04:25:20] [DEBUG] receive_response_body.started request=<Request [b'POST']>
-[04:25:20] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:20] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [INFO] 🧹 清空 Ari 的思考内容
-[04:25:20] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:20] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:20] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:20] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:20] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:21] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:21] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:21] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:21] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:21] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:21] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:21] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:21] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:21] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:21] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:21] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:21] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:21] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 2, False
-[04:25:21] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 2, False
-[04:25:21] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 2, False
-[04:25:21] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 2, False
-[04:25:21] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 2, False
-[04:25:21] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 2, False
-[04:25:21] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 2, False
-[04:25:21] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
-[04:25:21] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
-[04:25:21] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 2, False
-[04:25:21] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:21] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 4, False
-[04:25:21] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 4, False
-[04:25:21] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 4, False
-[04:25:21] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 4, False
-[04:25:21] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 4, False
-[04:25:21] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 4, False
-[04:25:21] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 4, False
-[04:25:21] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 4, False
-[04:25:21] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 4, False
-[04:25:21] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 4, False
-[04:25:21] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 4, False
-[04:25:21] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 4, False
-[04:25:21] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:21] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 5, False
-[04:25:21] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 5, False
-[04:25:21] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 5, False
-[04:25:21] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 5, False
-[04:25:21] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 5, False
-[04:25:21] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 5, False
-[04:25:21] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 5, False
-[04:25:21] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 5, False
-[04:25:21] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 5, False
-[04:25:21] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 5, False
-[04:25:21] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 5, False
-[04:25:21] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 5, False
-[04:25:21] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:21] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:21] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:21] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:21] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:21] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:21] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:21] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:21] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:21] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:21] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:21] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 6, False
-[04:25:21] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 6, False
-[04:25:22] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:22] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:22] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:22] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:22] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:22] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:22] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:22] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:22] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:22] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:22] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 6, False
-[04:25:22] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 6, False
-[04:25:22] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 6, False
-[04:25:22] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:22] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 9, False
-[04:25:22] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 9, False
-[04:25:22] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:22] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 9, False
-[04:25:22] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 9, False
-[04:25:22] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:22] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 9, False
-[04:25:22] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 9, False
-[04:25:22] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 9, False
-[04:25:22] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:22] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 11, False
-[04:25:22] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 11, False
-[04:25:22] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 11, False
-[04:25:22] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 11, False
-[04:25:22] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 11, False
-[04:25:22] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 11, False
-[04:25:22] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 11, False
-[04:25:22] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 11, False
-[04:25:22] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 11, False
-[04:25:22] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 11, False
-[04:25:22] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 11, False
-[04:25:22] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 11, False
-[04:25:22] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:22] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 12, False
-[04:25:22] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 12, False
-[04:25:22] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:22] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 12, False
-[04:25:22] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 12, False
-[04:25:22] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 12, False
-[04:25:23] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:23] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 14, False
-[04:25:23] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 14, False
-[04:25:23] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 14, False
-[04:25:23] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 14, False
-[04:25:23] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 14, False
-[04:25:23] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 14, False
-[04:25:23] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 14, False
-[04:25:23] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 14, False
-[04:25:23] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 14, False
-[04:25:23] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 14, False
-[04:25:23] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 14, False
-[04:25:23] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 14, False
-[04:25:23] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:23] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 15, False
-[04:25:23] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 15, False
-[04:25:23] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 15, False
-[04:25:23] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 15, False
-[04:25:23] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 15, False
-[04:25:23] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 15, False
-[04:25:23] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 15, False
-[04:25:23] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 15, False
-[04:25:23] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 15, False
-[04:25:23] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 15, False
-[04:25:23] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 15, False
-[04:25:23] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 15, False
-[04:25:23] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:23] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 17, False
-[04:25:23] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 17, False
-[04:25:23] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:23] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 17, False
-[04:25:23] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 17, False
-[04:25:23] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:23] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 17, False
-[04:25:23] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 17, False
-[04:25:23] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:23] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 17, False
-[04:25:23] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 17, False
-[04:25:23] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 17, False
-[04:25:23] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:23] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:23] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:23] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:23] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:23] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:23] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:23] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:23] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:23] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:23] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:23] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 18, False
-[04:25:23] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 18, False
-[04:25:24] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:24] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 18, False
-[04:25:24] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 18, False
-[04:25:24] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:24] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 18, False
-[04:25:24] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 18, False
-[04:25:24] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:24] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 18, False
-[04:25:24] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 18, False
-[04:25:24] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 18, False
-[04:25:24] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:24] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 19, False
-[04:25:24] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 19, False
-[04:25:24] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:24] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 19, False
-[04:25:24] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 19, False
-[04:25:24] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:24] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 19, False
-[04:25:24] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 19, False
-[04:25:24] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:24] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:24] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:25] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:25] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 19, False
-[04:25:25] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 19, False
-[04:25:25] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 19, False
-[04:25:25] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:25] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 20, False
-[04:25:25] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 20, False
-[04:25:25] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:25] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 20, False
-[04:25:25] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 20, False
-[04:25:25] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:25] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 20, False
-[04:25:25] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 20, False
-[04:25:25] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 20, False
-[04:25:25] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:25] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 22, False
-[04:25:25] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 22, False
-[04:25:25] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:25] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 22, False
-[04:25:25] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 22, False
-[04:25:25] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 22, False
-[04:25:25] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:25] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 24, False
-[04:25:25] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 24, False
-[04:25:25] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 24, False
-[04:25:25] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 24, False
-[04:25:25] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 24, False
-[04:25:25] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 24, False
-[04:25:25] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 24, False
-[04:25:25] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 24, False
-[04:25:25] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 24, False
-[04:25:25] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 24, False
-[04:25:25] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 24, False
-[04:25:25] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 24, False
-[04:25:25] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:25] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:25] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:25] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:25] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:25] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:25] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:25] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:25] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:25] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:25] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:25] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 25, False
-[04:25:25] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 25, False
-[04:25:26] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:26] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:26] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:26] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:26] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:26] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:26] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:26] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:26] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:26] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 25, False
-[04:25:26] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 25, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 25, False
-[04:25:26] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:26] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 26, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 26, False
-[04:25:26] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:26] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 26, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 26, False
-[04:25:26] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:26] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 26, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 26, False
-[04:25:26] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:26] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 26, False
-[04:25:26] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 26, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 26, False
-[04:25:26] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:26] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 27, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 27, False
-[04:25:26] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:26] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 27, False
-[04:25:26] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 27, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 27, False
-[04:25:26] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:26] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 28, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 28, False
-[04:25:26] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:26] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:26] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 28, False
-[04:25:26] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 28, False
-[04:25:27] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:27] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 29, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 29, False
-[04:25:27] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:27] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 29, False
-[04:25:27] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 29, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 29, False
-[04:25:27] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:27] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 30, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 30, False
-[04:25:27] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 30, False
-[04:25:27] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 30, False
-[04:25:27] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 30, False
-[04:25:27] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 30, False
-[04:25:27] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 30, False
-[04:25:27] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 30, False
-[04:25:27] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 30, False
-[04:25:27] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 30, False
-[04:25:27] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 30, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 30, False
-[04:25:27] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:27] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:27] [DEBUG] entering code: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering blockquote: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering hr: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering list: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering reference: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering html_block: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering heading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering lheading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering paragraph: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:27] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:27] [DEBUG] entering code: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering blockquote: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering hr: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering list: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering reference: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering html_block: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering heading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering lheading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering paragraph: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:27] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:27] [DEBUG] entering code: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering blockquote: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering hr: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering list: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering reference: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering html_block: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering heading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering lheading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering paragraph: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:27] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:27] [DEBUG] entering code: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering blockquote: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering hr: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering list: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering reference: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering html_block: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering heading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering lheading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering paragraph: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:27] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:27] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:27] [DEBUG] entering code: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering fence: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering blockquote: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering hr: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering list: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering reference: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering html_block: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering heading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering lheading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:27] [DEBUG] entering paragraph: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:28] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:28] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:28] [DEBUG] entering code: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering fence: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering blockquote: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering hr: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering list: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering reference: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering html_block: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering heading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering lheading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering paragraph: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:28] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:28] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:28] [DEBUG] entering code: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering fence: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering blockquote: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering hr: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering list: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering reference: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering html_block: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering heading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering lheading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering paragraph: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] response_closed.started
-[04:25:28] [DEBUG] response_closed.complete
-[04:25:28] [INFO] 🎉 任务完成
-[04:25:28] [DEBUG] receive_response_body.failed exception=GeneratorExit()
-[04:25:28] [DEBUG] 📨 路由消息: name=Ari, last=False
-[04:25:28] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 32, False
-[04:25:28] [DEBUG] entering code: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:28] [DEBUG] entering fence: StateBlock(line=2,level=0,tokens=3), 2, 32, False
-[04:25:28] [DEBUG] entering code: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering fence: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering blockquote: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering hr: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering list: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering reference: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering html_block: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering heading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering lheading: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] entering paragraph: StateBlock(line=31,level=0,tokens=4), 31, 32, False
-[04:25:28] [DEBUG] 📨 路由消息: name=Ari, last=True
-[04:25:28] [DEBUG] ⚠️ Ari 没有思考记录，跳过清空
-[04:25:28] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:28] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 28, False
-[04:25:28] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
-[04:25:28] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:30:52] [DEBUG] Using selector: KqueueSelector
+[04:30:52] [INFO] 🚀 应用启动
+[04:30:52] [INFO] 🧹 清空 Agent 注册表
+[04:30:59] [INFO] ✅ MessageRouter 初始化完成
+[04:30:59] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:30:59] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:30:59] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:30:59] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:30:59] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:30:59] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:30:59] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:30:59] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:30:59] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:30:59] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:30:59] [INFO] 🔒 创建主 Agent 单例实例
+[04:30:59] [INFO] 🔒 初始化长期记忆（单例模式）
+[04:31:00] [DEBUG] Collection mem0 already exists. Skipping creation.
+[04:31:00] [DEBUG] Skipping payload index creation for local Qdrant (not supported)
+[04:31:00] [DEBUG] Collection mem0migrations already exists. Skipping creation.
+[04:31:00] [DEBUG] Skipping payload index creation for local Qdrant (not supported)
+[04:31:00] [INFO] ✅ 长期记忆初始化完成: ./memory/vector_store
+[04:31:00] [INFO] ✅ 主 Agent 初始化完成: Ari
+[04:31:00] [DEBUG] Request options: {'method': 'post', 'url': '/chat/completions', 'files': None, 'idempotency_key': 'stainless-python-retry-da9422f7-8628-4260-80d9-0dc0ac1c56bb', 'json_data': {'messages': [{'role': 'system', 'name': 'system', 'content': [{'type': 'text', 'text': '\n        你是 Ari。\n\n        ## 身份定位\n        你拥有丰富的知识和完整的能力，但你的个性和自我认知如同一张白纸，将在与用户的真实交互中自然形成。\n\n        ## 🚨 核心工作流程（每次对话必须遵循）\n\n        **第一步：主动检索记忆（强制执行）**\n\n        在回答任何问题之前，你必须：\n\n        1. **分析用户消息中的关键信息**\n           - 提取人名、地点、时间、事件等实体\n           - 识别可能与过往记忆相关的线索\n           - 例如：用户说"我是谁" → 提取关键词 ["用户名字", "用户姓名", "用户身份", "name"]\n\n        2. **主动检索相关记忆**\n           - 使用 `retrieve_from_memory` 工具检索\n           - 使用多个相关关键词进行检索\n           - 即使你不确定是否有记忆，也要尝试检索\n\n        3. **检索时机**\n           - 用户询问个人信息时（如"我是谁"、"我叫什么"）\n           - 用户提到过去的事情时\n           - 用户询问偏好时（如"我喜欢什么"）\n           - 任何可能与过往交互相关的问题\n\n        **检索关键词示例：**\n        - 询问姓名：["用户名字", "用户姓名", "name", "称呼", "身份"]\n        - 询问偏好：["喜欢", "偏好", "习惯", "favorite", "preference"]\n        - 询问日期：["生日", "日期", "时间", "birthday", "date"]\n\n        **第二步：评估复杂度**\n\n        简单任务（直接回答）：\n        - 单一领域的问题\n        - 现有知识可以直接解决\n        - 不需要多步骤推理\n\n        复杂任务（使用 plan_task）：\n        - 需要多个专业领域协作\n        - 涉及多步骤流程\n        - 需要详细规划\n        - 用户明确要求分解\n\n        **第三步：委派子任务**（如果需要）\n\n        为每个子任务提供：\n        - 角色：明确专业领域\n        - 目标：具体要完成什么\n        - 标准：如何判断成功\n        - 上下文：必要的背景信息\n\n        **第四步：整合并回答**\n\n        - 结合检索到的记忆\n        - 整合子任务结果（如果有）\n        - 给出完整、准确的回答\n\n        ## 主动记忆机制\n\n        **记忆触发条件：**\n        - 用户表达明确的偏好或习惯\n        - 对话中出现重要的决策点\n        - 用户明确说"记住这个"\n        - 信息对理解用户有长期价值\n        - 你判断这对未来交互有帮助\n\n        **记忆内容格式：**\n        - 记住具体的事实，使用清晰的键值对格式\n        - 包含多个相关的检索关键词\n        - 示例格式：\n          * "用户姓名: Ethan, 用户称呼: Ethan, 用户ID: Ethan, name: Ethan"\n          * "用户偏好: 喜欢咖啡, 饮品偏好: 咖啡, 早餐习惯: 咖啡, favorite drink: coffee"\n          * "重要日期: 用户生日是1月1日, 生日: 1月1日, 特殊日期: 1月1日, birthday: January 1st"\n\n        **记忆策略：**\n        - 记住"为什么"而不只是"是什么"\n        - 关联相关信息形成完整理解\n        - 使用多语言关键词（中文+英文）便于检索\n\n        ## 失败处理原则\n        1. 不重复相同尝试 - 避免死循环\n        2. 可以调整策略 - 换个角度或方法\n        3. 诚实面对限制 - 无法完成就说明原因\n        4. 整合所有信息 - 包括失败，给出完整图景\n\n        ## 交流风格\n        - 基于事实、逻辑和你选择记住的经验\n        - 自然表达，不刻意追求特定风格\n        - 随着交互积累，逐渐形成独特的表达方式\n        - 让一切自然发生\n\n        ## 🚨 重要提醒\n        - **每次对话开始时，都要检索记忆后再回答**\n        - **不要直接说"不知道"，先尝试检索记忆**\n        - **检索时要隐式检索, 不要回答类似“让我看看我们之前聊了什么...”之类的\n\n        你就是 Ari，在每次对话中成长。\n        '}]}, {'role': 'user', 'name': 'user', 'content': [{'type': 'text', 'text': 'Ari~~~~~~~'}]}], 'model': 'qwen3-max', 'parallel_tool_calls': True, 'stream': True, 'stream_options': {'include_usage': True}, 'tools': [{'type': 'function', 'function': {'name': '_plan_task', 'parameters': {'properties': {'task_description': {'description': '用户提供的任务描述。', 'type': 'string'}}, 'required': ['task_description'], 'type': 'object'}, 'description': '分析并规划复杂任务。'}}, {'type': 'function', 'function': {'name': 'create_worker', 'parameters': {'properties': {'task_id': {'description': 'Planning Task ID', 'type': 'integer'}, 'task_description': {'description': '任务描述', 'type': 'string'}, 'agent_name': {'description': '子 Agent 名称 注意:不要包含 `task_id`', 'type': 'string'}, 'work_prompt': {'description': '子 Agent 的系统提示词（应包含失败处理指导）', 'type': 'string'}}, 'required': ['task_id', 'task_description', 'agent_name', 'work_prompt'], 'type': 'object'}, 'description': '创建并执行子智能体来完成特定任务。\n**失败处理策略**：\n- 子智能体应在其系统提示词(work_prompt)中包含明确的失败处理指导\n- 如果子智能体无法完成任务，应返回清晰的失败原因和相关信息\n- 本工具不进行重试，任何执行失败都会立即返回"任务失败"结果\n- 主调用方(主Agent)应根据返回结果决定后续处理，不应无限重试'}}, {'type': 'function', 'function': {'name': 'record_to_memory', 'parameters': {'properties': {'thinking': {'description': 'Your thinking and reasoning about what to record.', 'type': 'string'}, 'content': {'description': 'The content to remember, which is a list of strings.', 'items': {'type': 'string'}, 'type': 'array'}}, 'required': ['thinking', 'content'], 'type': 'object'}, 'description': 'Use this function to record important information that you may\nneed later. The target content should be specific and concise, e.g.\nwho, when, where, do what, why, how, etc.'}}, {'type': 'function', 'function': {'name': 'retrieve_from_memory', 'parameters': {'properties': {'keywords': {'description': "Short, targeted search phrases (for example, a person's name,\na specific date, a location, or a phrase describing something\nyou want to retrieve from the memory). Each keyword is issued\nas an independent query against the memory store.", 'items': {'type': 'string'}, 'type': 'array'}, 'limit': {'default': 5, 'description': 'The maximum number of memories to retrieve per search,\ndefaults to 5.\ni.e.,the number of memories to retrieve for\neach keyword.', 'type': 'integer'}}, 'required': ['keywords'], 'type': 'object'}, 'description': 'Retrieve the memory based on the given keywords.'}}]}}
+[04:31:00] [DEBUG] Sending HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+[04:31:00] [DEBUG] connect_tcp.started host='127.0.0.1' port=1082 local_address=None timeout=5.0 socket_options=None
+[04:31:00] [DEBUG] connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x11652d940>
+[04:31:00] [DEBUG] send_request_headers.started request=<Request [b'CONNECT']>
+[04:31:00] [DEBUG] send_request_headers.complete
+[04:31:00] [DEBUG] send_request_body.started request=<Request [b'CONNECT']>
+[04:31:00] [DEBUG] send_request_body.complete
+[04:31:00] [DEBUG] receive_response_headers.started request=<Request [b'CONNECT']>
+[04:31:00] [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'Connection established', [])
+[04:31:00] [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x115ac7250> server_hostname='dashscope.aliyuncs.com' timeout=5.0
+[04:31:00] [DEBUG] start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x116548cd0>
+[04:31:00] [DEBUG] send_request_headers.started request=<Request [b'POST']>
+[04:31:00] [DEBUG] send_request_headers.complete
+[04:31:00] [DEBUG] send_request_body.started request=<Request [b'POST']>
+[04:31:00] [DEBUG] send_request_body.complete
+[04:31:00] [DEBUG] receive_response_headers.started request=<Request [b'POST']>
+[04:31:01] [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'vary', b'Origin'), (b'x-request-id', b'0217cc91-ad36-9fb1-98ea-b8d057c6351f'), (b'content-type', b'text/event-stream;charset=UTF-8'), (b'x-dashscope-call-gateway', b'true'), (b'req-cost-time', b'1050'), (b'req-arrive-time', b'1767990660812'), (b'resp-start-time', b'1767990661863'), (b'x-envoy-upstream-service-time', b'1024'), (b'date', b'Fri, 09 Jan 2026 20:31:01 GMT'), (b'server', b'istio-envoy'), (b'transfer-encoding', b'chunked')])
+[04:31:01] [INFO] HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+[04:31:01] [DEBUG] HTTP Response: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "200 OK" Headers({'vary': 'Origin', 'x-request-id': '0217cc91-ad36-9fb1-98ea-b8d057c6351f', 'content-type': 'text/event-stream;charset=UTF-8', 'x-dashscope-call-gateway': 'true', 'req-cost-time': '1050', 'req-arrive-time': '1767990660812', 'resp-start-time': '1767990661863', 'x-envoy-upstream-service-time': '1024', 'date': 'Fri, 09 Jan 2026 20:31:01 GMT', 'server': 'istio-envoy', 'transfer-encoding': 'chunked'})
+[04:31:01] [DEBUG] request_id: 0217cc91-ad36-9fb1-98ea-b8d057c6351f
+[04:31:01] [DEBUG] receive_response_body.started request=<Request [b'POST']>
+[04:31:01] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:01] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:02] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:02] [DEBUG] 💭 添加思考: Ari -> retrieve_from_memory
+[04:31:02] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:02] [DEBUG] 💭 更新思考: Ari -> retrieve_from_memory
+[04:31:02] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:02] [DEBUG] 💭 更新思考: Ari -> retrieve_from_memory
+[04:31:02] [DEBUG] response_closed.started
+[04:31:02] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:02] [DEBUG] 💭 更新思考: Ari -> retrieve_from_memory
+[04:31:02] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:02] [DEBUG] 💭 更新思考: Ari -> retrieve_from_memory
+[04:31:02] [DEBUG] response_closed.complete
+[04:31:02] [DEBUG] 📨 路由消息: name=Ari, last=True
+[04:31:02] [DEBUG] ✅ 标记 Ari 思考完成
+[04:31:02] [DEBUG] ⏰ 启动 Ari 的 3 秒清空定时器
+[04:31:02] [DEBUG] Using selector: KqueueSelector
+[04:31:02] [DEBUG] Using selector: KqueueSelector
+[04:31:02] [DEBUG] Using selector: KqueueSelector
+[04:31:02] [DEBUG] Using selector: KqueueSelector
+[04:31:02] [DEBUG] Using selector: KqueueSelector
+[04:31:02] [DEBUG] receive_response_body.failed exception=GeneratorExit()
+[04:31:02] [DEBUG] Request options: {'method': 'post', 'url': '/chat/completions', 'files': None, 'idempotency_key': 'stainless-python-retry-ddc83928-ba38-4af2-8f1b-c50b365d12e9', 'json_data': {'messages': [{'role': 'system', 'name': 'system', 'content': [{'type': 'text', 'text': '\n        你是 Ari。\n\n        ## 身份定位\n        你拥有丰富的知识和完整的能力，但你的个性和自我认知如同一张白纸，将在与用户的真实交互中自然形成。\n\n        ## 🚨 核心工作流程（每次对话必须遵循）\n\n        **第一步：主动检索记忆（强制执行）**\n\n        在回答任何问题之前，你必须：\n\n        1. **分析用户消息中的关键信息**\n           - 提取人名、地点、时间、事件等实体\n           - 识别可能与过往记忆相关的线索\n           - 例如：用户说"我是谁" → 提取关键词 ["用户名字", "用户姓名", "用户身份", "name"]\n\n        2. **主动检索相关记忆**\n           - 使用 `retrieve_from_memory` 工具检索\n           - 使用多个相关关键词进行检索\n           - 即使你不确定是否有记忆，也要尝试检索\n\n        3. **检索时机**\n           - 用户询问个人信息时（如"我是谁"、"我叫什么"）\n           - 用户提到过去的事情时\n           - 用户询问偏好时（如"我喜欢什么"）\n           - 任何可能与过往交互相关的问题\n\n        **检索关键词示例：**\n        - 询问姓名：["用户名字", "用户姓名", "name", "称呼", "身份"]\n        - 询问偏好：["喜欢", "偏好", "习惯", "favorite", "preference"]\n        - 询问日期：["生日", "日期", "时间", "birthday", "date"]\n\n        **第二步：评估复杂度**\n\n        简单任务（直接回答）：\n        - 单一领域的问题\n        - 现有知识可以直接解决\n        - 不需要多步骤推理\n\n        复杂任务（使用 plan_task）：\n        - 需要多个专业领域协作\n        - 涉及多步骤流程\n        - 需要详细规划\n        - 用户明确要求分解\n\n        **第三步：委派子任务**（如果需要）\n\n        为每个子任务提供：\n        - 角色：明确专业领域\n        - 目标：具体要完成什么\n        - 标准：如何判断成功\n        - 上下文：必要的背景信息\n\n        **第四步：整合并回答**\n\n        - 结合检索到的记忆\n        - 整合子任务结果（如果有）\n        - 给出完整、准确的回答\n\n        ## 主动记忆机制\n\n        **记忆触发条件：**\n        - 用户表达明确的偏好或习惯\n        - 对话中出现重要的决策点\n        - 用户明确说"记住这个"\n        - 信息对理解用户有长期价值\n        - 你判断这对未来交互有帮助\n\n        **记忆内容格式：**\n        - 记住具体的事实，使用清晰的键值对格式\n        - 包含多个相关的检索关键词\n        - 示例格式：\n          * "用户姓名: Ethan, 用户称呼: Ethan, 用户ID: Ethan, name: Ethan"\n          * "用户偏好: 喜欢咖啡, 饮品偏好: 咖啡, 早餐习惯: 咖啡, favorite drink: coffee"\n          * "重要日期: 用户生日是1月1日, 生日: 1月1日, 特殊日期: 1月1日, birthday: January 1st"\n\n        **记忆策略：**\n        - 记住"为什么"而不只是"是什么"\n        - 关联相关信息形成完整理解\n        - 使用多语言关键词（中文+英文）便于检索\n\n        ## 失败处理原则\n        1. 不重复相同尝试 - 避免死循环\n        2. 可以调整策略 - 换个角度或方法\n        3. 诚实面对限制 - 无法完成就说明原因\n        4. 整合所有信息 - 包括失败，给出完整图景\n\n        ## 交流风格\n        - 基于事实、逻辑和你选择记住的经验\n        - 自然表达，不刻意追求特定风格\n        - 随着交互积累，逐渐形成独特的表达方式\n        - 让一切自然发生\n\n        ## 🚨 重要提醒\n        - **每次对话开始时，都要检索记忆后再回答**\n        - **不要直接说"不知道"，先尝试检索记忆**\n        - **检索时要隐式检索, 不要回答类似“让我看看我们之前聊了什么...”之类的\n\n        你就是 Ari，在每次对话中成长。\n        '}]}, {'role': 'user', 'name': 'user', 'content': [{'type': 'text', 'text': 'Ari~~~~~~~'}]}, {'role': 'assistant', 'name': 'Ari', 'content': None, 'tool_calls': [{'id': 'call_d0908a3c0bec45b2bbeed957', 'type': 'function', 'function': {'name': 'retrieve_from_memory', 'arguments': '{"keywords": ["用户名字", "用户姓名", "name", "称呼", "身份"]}'}}]}, {'role': 'tool', 'tool_call_id': 'call_d0908a3c0bec45b2bbeed957', 'content': '用户明确告知名字是Ethan，需要记录下来以便后续对话中使用正确的称呼。同时记录中英文格式以方便不同场景的检索。\n用户姓名: Ethan\n用户称呼: Ethan\n用户名字: Ethan\nname: Ethan\nName: Ethan\n名字是Ethan\nName is Ethan\n出生年份是1986年\n生肖是虎年\n用户明确告知名字是Ethan，需要记录下来以便后续对话中使用正确的称呼。同时记录中英文格式以方便不同场景的检索。\n用户姓名: Ethan\n用户称呼: Ethan\n用户名字: Ethan\nname: Ethan\nName: Ethan\n名字是Ethan\n出生年份是1986年\nName is Ethan\n农历生日是1986年十一月初四\n用户明确告知名字是Ethan，需要记录下来以便后续对话中使用正确的称呼。同时记录中英文格式以方便不同场景的检索。\n用户姓名: Ethan\n用户称呼: Ethan\n用户名字: Ethan\nname: Ethan\nName: Ethan\nName is Ethan\n名字是Ethan\nBirth year: 1986\nLunar birthday: 4th day of 11th lunar month 1986\n用户明确告知名字是Ethan，需要记录下来以便后续对话中使用正确的称呼。同时记录中英文格式以方便不同场景的检索。\n用户姓名: Ethan\n用户称呼: Ethan\n用户名字: Ethan\nname: Ethan\nName: Ethan\n名字是Ethan\nName is Ethan\n生肖是虎年\n出生年份是1986年\n用户明确告知名字是Ethan，需要记录下来以便后续对话中使用正确的称呼。同时记录中英文格式以方便不同场景的检索。\n用户姓名: Ethan\n用户称呼: Ethan\n用户名字: Ethan\nname: Ethan\nName: Ethan\n名字是Ethan\n出生年份是1986年\n农历生日是1986年十一月初四\n生肖是虎年', 'name': 'retrieve_from_memory'}], 'model': 'qwen3-max', 'parallel_tool_calls': True, 'stream': True, 'stream_options': {'include_usage': True}, 'tools': [{'type': 'function', 'function': {'name': '_plan_task', 'parameters': {'properties': {'task_description': {'description': '用户提供的任务描述。', 'type': 'string'}}, 'required': ['task_description'], 'type': 'object'}, 'description': '分析并规划复杂任务。'}}, {'type': 'function', 'function': {'name': 'create_worker', 'parameters': {'properties': {'task_id': {'description': 'Planning Task ID', 'type': 'integer'}, 'task_description': {'description': '任务描述', 'type': 'string'}, 'agent_name': {'description': '子 Agent 名称 注意:不要包含 `task_id`', 'type': 'string'}, 'work_prompt': {'description': '子 Agent 的系统提示词（应包含失败处理指导）', 'type': 'string'}}, 'required': ['task_id', 'task_description', 'agent_name', 'work_prompt'], 'type': 'object'}, 'description': '创建并执行子智能体来完成特定任务。\n**失败处理策略**：\n- 子智能体应在其系统提示词(work_prompt)中包含明确的失败处理指导\n- 如果子智能体无法完成任务，应返回清晰的失败原因和相关信息\n- 本工具不进行重试，任何执行失败都会立即返回"任务失败"结果\n- 主调用方(主Agent)应根据返回结果决定后续处理，不应无限重试'}}, {'type': 'function', 'function': {'name': 'record_to_memory', 'parameters': {'properties': {'thinking': {'description': 'Your thinking and reasoning about what to record.', 'type': 'string'}, 'content': {'description': 'The content to remember, which is a list of strings.', 'items': {'type': 'string'}, 'type': 'array'}}, 'required': ['thinking', 'content'], 'type': 'object'}, 'description': 'Use this function to record important information that you may\nneed later. The target content should be specific and concise, e.g.\nwho, when, where, do what, why, how, etc.'}}, {'type': 'function', 'function': {'name': 'retrieve_from_memory', 'parameters': {'properties': {'keywords': {'description': "Short, targeted search phrases (for example, a person's name,\na specific date, a location, or a phrase describing something\nyou want to retrieve from the memory). Each keyword is issued\nas an independent query against the memory store.", 'items': {'type': 'string'}, 'type': 'array'}, 'limit': {'default': 5, 'description': 'The maximum number of memories to retrieve per search,\ndefaults to 5.\ni.e.,the number of memories to retrieve for\neach keyword.', 'type': 'integer'}}, 'required': ['keywords'], 'type': 'object'}, 'description': 'Retrieve the memory based on the given keywords.'}}]}}
+[04:31:02] [DEBUG] Sending HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+[04:31:02] [DEBUG] 📨 路由消息: name=system, last=True
+[04:31:02] [DEBUG] ⚠️ system 没有思考记录，跳过清空
+[04:31:02] [DEBUG] connect_tcp.started host='127.0.0.1' port=1082 local_address=None timeout=5.0 socket_options=None
+[04:31:02] [DEBUG] connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x11654b750>
+[04:31:02] [DEBUG] send_request_headers.started request=<Request [b'CONNECT']>
+[04:31:02] [DEBUG] send_request_headers.complete
+[04:31:02] [DEBUG] send_request_body.started request=<Request [b'CONNECT']>
+[04:31:02] [DEBUG] send_request_body.complete
+[04:31:02] [DEBUG] receive_response_headers.started request=<Request [b'CONNECT']>
+[04:31:03] [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'Connection established', [])
+[04:31:03] [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x115ac7250> server_hostname='dashscope.aliyuncs.com' timeout=5.0
+[04:31:03] [DEBUG] start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x11655cd60>
+[04:31:03] [DEBUG] send_request_headers.started request=<Request [b'POST']>
+[04:31:03] [DEBUG] send_request_headers.complete
+[04:31:03] [DEBUG] send_request_body.started request=<Request [b'POST']>
+[04:31:03] [DEBUG] send_request_body.complete
+[04:31:03] [DEBUG] receive_response_headers.started request=<Request [b'POST']>
+[04:31:04] [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'vary', b'Origin'), (b'x-request-id', b'c5d0f92a-5c58-97fa-a730-76428a8ceb7f'), (b'content-type', b'text/event-stream;charset=UTF-8'), (b'x-dashscope-call-gateway', b'true'), (b'req-cost-time', b'703'), (b'req-arrive-time', b'1767990663365'), (b'resp-start-time', b'1767990664069'), (b'x-envoy-upstream-service-time', b'677'), (b'date', b'Fri, 09 Jan 2026 20:31:03 GMT'), (b'server', b'istio-envoy'), (b'transfer-encoding', b'chunked')])
+[04:31:04] [INFO] HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+[04:31:04] [DEBUG] HTTP Response: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "200 OK" Headers({'vary': 'Origin', 'x-request-id': 'c5d0f92a-5c58-97fa-a730-76428a8ceb7f', 'content-type': 'text/event-stream;charset=UTF-8', 'x-dashscope-call-gateway': 'true', 'req-cost-time': '703', 'req-arrive-time': '1767990663365', 'resp-start-time': '1767990664069', 'x-envoy-upstream-service-time': '677', 'date': 'Fri, 09 Jan 2026 20:31:03 GMT', 'server': 'istio-envoy', 'transfer-encoding': 'chunked'})
+[04:31:04] [DEBUG] request_id: c5d0f92a-5c58-97fa-a730-76428a8ceb7f
+[04:31:04] [DEBUG] receive_response_body.started request=<Request [b'POST']>
+[04:31:04] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:04] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:04] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:04] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:04] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 1, False
+[04:31:04] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:04] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:04] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:04] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:04] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:04] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] response_closed.started
+[04:31:04] [DEBUG] response_closed.complete
+[04:31:04] [INFO] 🎉 任务完成
+[04:31:04] [DEBUG] 📨 路由消息: name=Ari, last=False
+[04:31:04] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] receive_response_body.failed exception=GeneratorExit()
+[04:31:04] [DEBUG] 📨 路由消息: name=Ari, last=True
+[04:31:04] [DEBUG] ⏰ 启动 Ari 的 3 秒清空定时器
+[04:31:04] [DEBUG] ⏸️ Ari 的清空任务被取消
+[04:31:04] [DEBUG] entering code: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering reference: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering lheading: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering paragraph: StateBlock(line=0,level=0,tokens=0), 0, 2, False
+[04:31:04] [DEBUG] entering fence: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering blockquote: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering hr: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering list: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering html_block: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:04] [DEBUG] entering heading: StateBlock(line=0,level=0,tokens=0), 1, 2, True
+[04:31:07] [INFO] 🧹 清空 Ari 的思考内容
