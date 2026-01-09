@@ -121,3 +121,6 @@ models/
 docs/_build/
 site/
 memory/
+
+# AgentScope
+agentscope/
