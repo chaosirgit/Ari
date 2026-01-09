@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-任务列表组件 - 使用 DataTable（整行状态高亮，支持失败状态）
+任务列表组件 - 使用 DataTable（整行状态高亮，支持失败状态，添加渲染保护）
 """
 
+import asyncio
 from textual.containers import VerticalScroll
 from textual.widgets import DataTable
 from textual.app import ComposeResult
@@ -40,13 +41,17 @@ class TaskListWidget(VerticalScroll):
         self._row_keys = {}  # 存储 task_id 到 RowKey 的映射
         self._column_keys = {}  # 存储列名到 ColumnKey 的映射
 
-        # 状态样式映射（应用到整行）
-        self.status_styles = {
-            0: "dim",  # 等待中 - 暗淡
-            1: "cyan",  # 准备中 - 青色
-            2: "bold blue",  # 执行中 - 粗体蓝色（配合光标高亮）
-            3: "green",  # 已完成 - 绿色
-            4: "bold red"  # 失败 - 粗体红色
+        # 🔒 渲染保护
+        self._rendering = False
+        self._pending_updates = {}  # 存储渲染期间的待处理更新 {task_id: (status, result)}
+
+        # 🔒 状态样式映射（应用到整行）+ 状态符号
+        self.status_config = {
+            0: {"style": "dim", "symbol": "○"},           # 等待中 - 空心圆
+            1: {"style": "cyan", "symbol": "→"},          # 准备中 - 箭头
+            2: {"style": "bold blue", "symbol": "⋯"},     # 执行中 - 省略号
+            3: {"style": "green", "symbol": "✓"},         # 已完成 - 对勾
+            4: {"style": "bold red", "symbol": "✗"}       # 失败 - 叉号
         }
 
     def compose(self) -> ComposeResult:
@@ -62,8 +67,8 @@ class TaskListWidget(VerticalScroll):
     def on_mount(self):
         """挂载时初始化表格列"""
         # 只保留三列：步骤、描述、结果
-        self._column_keys["id"] = self._table.add_column("步骤", width=8)
-        self._column_keys["name"] = self._table.add_column("描述", width=35)
+        self._column_keys["id"] = self._table.add_column("步骤", width=10)
+        self._column_keys["name"] = self._table.add_column("描述", width=33)
         self._column_keys["result"] = self._table.add_column("结果", width=25)
 
     async def update_tasks(self, steps: list):
@@ -78,13 +83,19 @@ class TaskListWidget(VerticalScroll):
 
     async def update_task_status(self, task_id: int, status: int, result: str = ""):
         """
-        更新单个任务的状态（整行样式）
+        更新单个任务的状态（整行样式，带渲染保护）
 
         Args:
             task_id: 任务 ID
             status: 状态码 (0=等待中, 1=准备中, 2=执行中, 3=已完成, 4=失败)
             result: 结果文本
         """
+        # 🔒 如果正在渲染，将更新加入待处理队列
+        if self._rendering:
+            self._pending_updates[task_id] = (status, result)
+            logger.debug(f"⏳ 任务 {task_id} 更新已加入待处理队列")
+            return
+
         if task_id <= len(self.tasks):
             # 更新内部数据
             self.tasks[task_id - 1]["status"] = status
@@ -103,15 +114,17 @@ class TaskListWidget(VerticalScroll):
             task_name = task.get("task_name", "")
             result_display = result[:23] + "..." if len(result) > 23 else result
 
-            # 获取状态样式
-            style = self.status_styles.get(status, "")
+            # 🔒 获取状态配置（样式 + 符号）
+            config = self.status_config.get(status, {"style": "", "symbol": ""})
+            style = config["style"]
+            symbol = config["symbol"]
 
             try:
-                # 更新所有列（应用整行样式）
+                # 🔒 更新所有列（应用整行样式 + 状态符号）
                 self._table.update_cell(
                     row_key=row_key,
                     column_key=self._column_keys["id"],
-                    value=Text(f"步骤 {task_id}", style=style)
+                    value=Text(f"{symbol} 步骤 {task_id}", style=style)
                 )
 
                 self._table.update_cell(
@@ -140,46 +153,70 @@ class TaskListWidget(VerticalScroll):
                 await self._render_tasks()
 
     async def _render_tasks(self):
-        """渲染任务列表（完整重绘）"""
-        self._table.clear()
-        self._row_keys.clear()
+        """渲染任务列表（完整重绘，带渲染保护）"""
+        # 🔒 设置渲染标志
+        self._rendering = True
 
-        if not self.tasks:
-            self._table.add_row("", "暂无任务", "")
-            return
+        try:
+            self._table.clear()
+            self._row_keys.clear()
 
-        for task in self.tasks:
-            task_id = task.get("task_id", "")
-            task_name = task.get("task_name", "")
-            status = task.get("status", 0)
-            result = task.get("result", "")
+            if not self.tasks:
+                self._table.add_row("", "暂无任务", "")
+                return
 
-            # 获取状态样式
-            style = self.status_styles.get(status, "")
+            for task in self.tasks:
+                task_id = task.get("task_id", "")
+                task_name = task.get("task_name", "")
+                status = task.get("status", 0)
+                result = task.get("result", "")
 
-            # 截断结果文本
-            result_display = result[:23] + "..." if len(result) > 23 else result
+                # 🔒 获取状态配置（样式 + 符号）
+                config = self.status_config.get(status, {"style": "", "symbol": ""})
+                style = config["style"]
+                symbol = config["symbol"]
 
-            # 添加行（应用整行样式）
-            row_key = self._table.add_row(
-                Text(f"步骤 {task_id}", style=style),
-                Text(task_name, style=style),
-                Text(result_display or "-", style=style)
-            )
+                # 截断结果文本
+                result_display = result[:23] + "..." if len(result) > 23 else result
 
-            # 保存 task_id 到 RowKey 的映射
-            self._row_keys[task_id] = row_key
+                # 🔒 添加行（应用整行样式 + 状态符号）
+                row_key = self._table.add_row(
+                    Text(f"{symbol} 步骤 {task_id}", style=style),
+                    Text(task_name, style=style),
+                    Text(result_display or "-", style=style)
+                )
 
-            # 如果是执行中状态，移动光标到该行
-            if status == 2:
-                row_index = self._table.get_row_index(row_key)
-                self._table.move_cursor(row=row_index)
-                self._table.show_cursor = True
+                # 保存 task_id 到 RowKey 的映射
+                self._row_keys[task_id] = row_key
+
+                # 如果是执行中状态，移动光标到该行
+                if status == 2:
+                    row_index = self._table.get_row_index(row_key)
+                    self._table.move_cursor(row=row_index)
+                    self._table.show_cursor = True
+
+        finally:
+            # 🔒 释放渲染标志
+            self._rendering = False
+
+            # 🔄 处理待处理的更新
+            if self._pending_updates:
+                logger.debug(f"🔄 处理 {len(self._pending_updates)} 个待处理更新")
+                pending = self._pending_updates.copy()
+                self._pending_updates.clear()
+
+                for task_id, (status, result) in pending.items():
+                    await self.update_task_status(task_id, status, result)
 
     async def clear_tasks(self):
         """清空任务列表"""
+        # 🔒 等待渲染完成
+        while self._rendering:
+            await asyncio.sleep(0.01)
+
         self.tasks = []
         self._row_keys.clear()
+        self._pending_updates.clear()
         self._table.clear()
         self._table.show_cursor = False
         self._table.add_row("", "暂无任务", "")

@@ -1,25 +1,34 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-消息路由器 - 负责将消息分发到对应的 UI 组件
+消息路由器 - 负责将消息分发到对应的 UI 组件（批量更新优化版）
 """
 
 import json
+import asyncio
 from config import PROJECT_NAME, logger
 
 
 class MessageRouter:
-    """消息路由器 - 根据消息类型分发到不同组件"""
+    """消息路由器 - 根据消息类型分发到不同组件（支持批量更新）"""
 
     def __init__(self, chat_widget, task_widget, thinking_widget=None, system_message_widget=None):
         self.chat_widget = chat_widget
         self.task_widget = task_widget
         self.thinking_widget = thinking_widget
-        self.system_message_widget = system_message_widget        # 业务状态
+        self.system_message_widget = system_message_widget
+
+        # 业务状态
         self.steps = []
         self.planning_completed = False
 
+        # 批量更新队列
+        self._update_queue = asyncio.Queue()
+        self._batch_task = None
+        self._processing = False
+
         logger.info("✅ MessageRouter 初始化完成")
+
     async def _send_system_message(self, message: str, level: str = "info"):
         """发送系统消息到系统消息组件"""
         if self.system_message_widget:
@@ -27,7 +36,39 @@ class MessageRouter:
 
     async def route_message(self, msg, last: bool):
         """
-        路由消息到对应组件
+        路由消息到对应组件（批量更新入口）
+
+        Args:
+            msg: AgentScope 消息对象
+            last: 是否是最后一条消息
+        """
+        # 将消息放入队列
+        await self._update_queue.put((msg, last))
+
+        # 启动批处理任务（如果未运行）
+        if not self._processing:
+            self._batch_task = asyncio.create_task(self._process_updates())
+
+    async def _process_updates(self):
+        """批量处理更新队列"""
+        self._processing = True
+
+        try:
+            while not self._update_queue.empty():
+                msg, last = await self._update_queue.get()
+
+                # 执行实际的路由逻辑
+                await self._do_route(msg, last)
+
+                # 让出控制权，允许用户交互
+                await asyncio.sleep(0)
+
+        finally:
+            self._processing = False
+
+    async def _do_route(self, msg, last: bool):
+        """
+        实际的路由逻辑
 
         Args:
             msg: AgentScope 消息对象
@@ -90,7 +131,9 @@ class MessageRouter:
                         agent_name=msg.name,
                         tool_name=tool_name,
                         tool_input=tool_input
-                    )            # 2. 处理推理模型的 thinking 块
+                    )
+
+            # 2. 处理推理模型的 thinking 块
             elif block_type == "thinking":
                 thinking_content = block.get("text") or block.get("content", "")
 
@@ -137,9 +180,6 @@ class MessageRouter:
         处理 Planning Agent 消息
         ✅ 只处理规划逻辑，不显示在聊天区
         """
-        # ❌ 移除这行：不再添加到聊天区
-        # await self.chat_widget.add_message(msg, last)
-
         if not last or self.planning_completed:
             return
 
@@ -171,6 +211,7 @@ class MessageRouter:
         except json.JSONDecodeError as e:
             await self._send_system_message(f"❌ JSON 解析失败: {e}", "error")
             logger.error(f"❌ JSON 解析失败: {e}")
+
     async def _handle_worker(self, msg, last: bool):
         """处理 Worker Agent 消息"""
         await self.chat_widget.add_message(msg, last)
@@ -181,7 +222,7 @@ class MessageRouter:
             if len(worker_name_parts) >= 2:
                 task_id = int(worker_name_parts[-1])
                 worker_base_name = "-".join(worker_name_parts[:-1]).replace("Worker_", "")
-                
+
                 # 发送系统消息 - Worker创建（只在第一次接收到消息时）
                 if not last and self.steps and task_id <= len(self.steps) and self.steps[task_id - 1]["status"] == 0:
                     await self._send_system_message(f"👷 创建专家助手: {worker_base_name}", "info")
@@ -199,23 +240,101 @@ class MessageRouter:
                 self.steps[task_id - 1]["result"] = text_content
                 await self.task_widget.update_task_status(task_id, status=2, result=text_content)
             else:
-                # 完成
-                self.steps[task_id - 1]["status"] = 3
-                self.steps[task_id - 1]["result"] = text_content
-                await self.task_widget.update_task_status(task_id, status=3, result=text_content)
+                # 🔒 方案2：三层失败检测
+                is_failed = False
 
-                # 发送系统消息 - Worker完成
-                worker_base_name = "-".join(worker_name_parts[:-1]).replace("Worker_", "")
-                await self._send_system_message(f"✅ 专家助手 {worker_base_name} 完成任务", "success")
+                # 第一层：检查消息的 metadata
+                if hasattr(msg, 'metadata') and msg.metadata:
+                    status = msg.metadata.get('status')
+                    if status == 'failed':
+                        is_failed = True
+                        logger.info(f"🔍 检测到失败（metadata）: task_id={task_id}")
 
-                # 检查是否全部完成
-                if all(step["status"] == 3 for step in self.steps):
+                # 第二层：检查 content 中的 tool_result
+                if not is_failed and isinstance(msg.content, list):
+                    for block in msg.content:
+                        if isinstance(block, dict):
+                            # 检查 tool_result 类型的 block
+                            if block.get('type') == 'tool_result':
+                                tool_metadata = block.get('metadata', {})
+                                if tool_metadata.get('status') == 'failed':
+                                    is_failed = True
+                                    logger.info(f"🔍 检测到失败（tool_result metadata）: task_id={task_id}")
+                                    break
+
+                # 第三层：关键词检测（兜底）
+                if not is_failed:
+                    is_failed = self._is_task_failed(text_content)
+                    if is_failed:
+                        logger.info(f"🔍 检测到失败（关键词）: task_id={task_id}")
+
+                if is_failed:
+                    # 失败：status = 4
+                    self.steps[task_id - 1]["status"] = 4
+                    self.steps[task_id - 1]["result"] = text_content
+                    await self.task_widget.update_task_status(task_id, status=4, result=text_content)
+
+                    # 发送系统消息 - Worker失败
+                    worker_base_name = "-".join(worker_name_parts[:-1]).replace("Worker_", "")
+                    await self._send_system_message(f"❌ 专家助手 {worker_base_name} 任务失败", "error")
+                else:
+                    # 成功：status = 3
+                    self.steps[task_id - 1]["status"] = 3
+                    self.steps[task_id - 1]["result"] = text_content
+                    await self.task_widget.update_task_status(task_id, status=3, result=text_content)
+
+                    # 发送系统消息 - Worker完成
+                    worker_base_name = "-".join(worker_name_parts[:-1]).replace("Worker_", "")
+                    await self._send_system_message(f"✅ 专家助手 {worker_base_name} 完成任务", "success")
+
+                # 检查是否全部完成（包括失败的任务）
+                if all(step["status"] in [3, 4] for step in self.steps):
                     await self._send_system_message("🎉 所有任务完成！", "success")
                     logger.info("🎉 所有任务完成！")
 
         except (ValueError, IndexError) as e:
             await self._send_system_message(f"❌ 解析 Worker 消息失败: {e}", "error")
             logger.error(f"❌ 解析 Worker 消息失败: {e}")
+
+    @staticmethod
+    def _is_task_failed(text_content: str) -> bool:
+        """
+        判断任务是否失败（基于关键词检测）
+
+        Args:
+            text_content: 任务结果文本
+
+        Returns:
+            bool: True 表示失败，False 表示成功
+        """
+        # 🔒 失败关键词列表
+        failure_keywords = [
+            # 中文关键词
+            "失败", "错误", "异常", "无法", "不能", "未能",
+            "未定义", "不支持", "无效", "拒绝", "超时",
+
+            # 英文关键词
+            "error", "failed", "failure", "exception", "unable",
+            "cannot", "can't", "could not", "couldn't",
+
+            # Python 异常类型
+            "zerodivisionerror", "valueerror", "typeerror",
+            "keyerror", "indexerror", "attributeerror",
+            "nameerror", "runtimeerror", "ioerror",
+
+            # 失败标记符号
+            "❌", "✗", "[失败]", "[错误]", "[异常]"
+        ]
+
+        text_lower = text_content.lower()
+
+        # 检查是否包含失败关键词
+        for keyword in failure_keywords:
+            if keyword in text_lower:
+                return True
+
+        return False
+
     @staticmethod
     def _extract_text(content) -> str:
         """提取消息文本内容"""

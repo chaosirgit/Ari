@@ -5,6 +5,7 @@ Ari 主智能体实现模块。
 """
 
 from typing import Any, Dict, List
+from threading import Lock
 from agentscope.model import OpenAIChatModel
 from agentscope.formatter import OpenAIChatFormatter
 from agentscope.tool import Toolkit, ToolResponse
@@ -27,17 +28,131 @@ from config import (
     EMBEDDING_DIMENSION,
     LLM_API_KEY,
     LLM_MODEL_NAME,
-    LLM_BASE_URL, MEMORY_PATH,
+    LLM_BASE_URL,
+    MEMORY_PATH,
+    logger,
 )
+
+
+class LongTermMemoryManager:
+    """长期记忆管理器 - 单例模式，防止 Qdrant 客户端冲突"""
+
+    _instance = None
+    _lock = Lock()
+    _memory_instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def get_memory(
+        self,
+        agent_name: str = PROJECT_NAME,
+        user_name: str = "Ethan",
+    ) -> Mem0LongTermMemory:
+        """
+        获取长期记忆实例（单例）
+
+        Args:
+            agent_name: Agent 名称
+            user_name: 用户名称
+
+        Returns:
+            Mem0LongTermMemory: 长期记忆实例
+        """
+        if self._memory_instance is None:
+            with self._lock:
+                if self._memory_instance is None:
+                    logger.info("🔒 初始化长期记忆（单例模式）")
+                    self._memory_instance = self._create_memory_instance(
+                        agent_name=agent_name,
+                        user_name=user_name,
+                    )
+        return self._memory_instance
+
+    def _create_memory_instance(
+        self,
+        agent_name: str,
+        user_name: str,
+    ) -> Mem0LongTermMemory:
+        """
+        创建长期记忆实例（内部方法）
+
+        Args:
+            agent_name: Agent 名称
+            user_name: 用户名称
+
+        Returns:
+            Mem0LongTermMemory: 新创建的长期记忆实例
+        """
+        # 创建嵌入模型，带文件缓存
+        embedder = OpenAITextEmbedding(
+            model_name=EMBEDDING_MODEL_NAME,
+            api_key=EMBEDDING_API_KEY,
+            base_url=EMBEDDING_BASE_URL,
+            dimensions=EMBEDDING_DIMENSION,
+            embedding_cache=FileEmbeddingCache(
+                cache_dir=EMBEDDING_CACHE_DIR,
+                max_file_number=1000,
+                max_cache_size=10,  # 最大缓存大小（MB）
+            ),
+        )
+
+        # 创建长期记忆
+        long_term_memory = Mem0LongTermMemory(
+            agent_name=agent_name,
+            user_name=user_name,
+            model=OpenAIChatModel(
+                api_key=LLM_API_KEY,
+                client_kwargs={"base_url": LLM_BASE_URL},
+                model_name=LLM_MODEL_NAME,
+                stream=False,
+            ),
+            embedding_model=embedder,
+            vector_store_config=VectorStoreConfig(
+                provider="qdrant",
+                config={
+                    "on_disk": True,
+                    "path": MEMORY_PATH,
+                    "embedding_model_dims": EMBEDDING_DIMENSION
+                }
+            )
+        )
+
+        logger.info(f"✅ 长期记忆初始化完成: {MEMORY_PATH}")
+        return long_term_memory
+
+    def reset(self):
+        """重置长期记忆实例（用于测试或重新初始化）"""
+        with self._lock:
+            if self._memory_instance is not None:
+                logger.info("🔄 重置长期记忆实例")
+                self._memory_instance = None
 
 
 class MainReActAgent(MyBaseReActAgent):
     """
-    Ari 主智能体类。
+    Ari 主智能体类（单例模式）。
 
     负责接收用户请求，分析任务类型（聊天或复杂任务），
     拥有长期记忆功能，并能通过 Handoffs 机制调用子 Agent。
     """
+
+    _instance = None
+    _lock = Lock()
+
+    def __new__(cls, **kwargs):
+        """单例模式：确保整个应用只有一个主 Agent 实例"""
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    logger.info("🔒 创建主 Agent 单例实例")
+                    cls._instance = super().__new__(cls)
+                    cls._instance._initialized = False
+        return cls._instance
 
     def __init__(
             self,
@@ -50,6 +165,10 @@ class MainReActAgent(MyBaseReActAgent):
             name: 智能体名称
             sys_prompt: 系统提示词
         """
+        # 避免重复初始化
+        if self._initialized:
+            return
+
         name = PROJECT_NAME
         sys_prompt = """
         你是 Ari。
@@ -175,7 +294,13 @@ class MainReActAgent(MyBaseReActAgent):
         toolkit.register_tool_function(create_worker)
 
         memory = InMemoryMemory()
-        long_term_memory = self._create_long_term_memory()
+
+        # 🔒 使用单例管理器获取长期记忆
+        long_term_memory = LongTermMemoryManager().get_memory(
+            agent_name=name,
+            user_name="Ethan",
+        )
+
         # 调用父类初始化
         super().__init__(
             name=name,
@@ -189,48 +314,17 @@ class MainReActAgent(MyBaseReActAgent):
             **kwargs,
         )
 
-    def _create_long_term_memory(self) -> Mem0LongTermMemory:
-        """
-        创建长期记忆实例。
+        # 标记为已初始化
+        self._initialized = True
+        logger.info(f"✅ 主 Agent 初始化完成: {name}")
 
-        Returns:
-            Mem0LongTermMemory: 配置好的长期记忆实例
-        """
-        # 创建嵌入模型，带文件缓存
-        embedder = OpenAITextEmbedding(
-            model_name=EMBEDDING_MODEL_NAME,
-            api_key=EMBEDDING_API_KEY,
-            base_url=EMBEDDING_BASE_URL,
-            dimensions=EMBEDDING_DIMENSION,
-            embedding_cache=FileEmbeddingCache(
-                cache_dir=EMBEDDING_CACHE_DIR,
-                max_file_number=1000,
-                max_cache_size=10,  # 最大缓存大小（MB）
-            ),
-        )
-
-        # 创建长期记忆
-        long_term_memory = Mem0LongTermMemory(
-            agent_name=PROJECT_NAME,
-            user_name="Ethan",
-            model=OpenAIChatModel(
-                api_key=LLM_API_KEY,
-                client_kwargs={"base_url": LLM_BASE_URL},
-                model_name=LLM_MODEL_NAME,
-                stream=False,
-            ),
-            embedding_model=embedder,
-            vector_store_config=VectorStoreConfig(
-                provider="qdrant",
-                config={
-                    "on_disk": True,
-                    "path": MEMORY_PATH,  # Your customized storage path
-                    "embedding_model_dims": EMBEDDING_DIMENSION
-                }
-            )
-        )
-
-        return long_term_memory
+    @classmethod
+    def reset_instance(cls):
+        """重置单例实例（用于清空对话历史）"""
+        with cls._lock:
+            if cls._instance is not None:
+                logger.info("🔄 重置主 Agent 单例实例")
+                cls._instance = None
 
     # ====== 完善：使用专门的 PlanningReActAgent 来执行规划 ======
     async def _plan_task(self, task_description: str) -> ToolResponse:

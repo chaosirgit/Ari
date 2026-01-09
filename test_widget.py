@@ -1,23 +1,24 @@
-import warnings
-
-warnings.filterwarnings("ignore", category=DeprecationWarning)
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+多智能体聊天系统 - Textual TUI 测试界面
+"""
 
 import asyncio
 from textual.app import App, ComposeResult
-from textual.containers import Vertical
 from textual.widgets import Header, Footer
+from textual.widgets import TextArea
 
 from agentscope.message import Msg
-from config import logger
-from core.lib.my_base_agent_lib import GlobalAgentRegistry
 from core.main_agent import MainReActAgent
-
 from ui.chat_widget import ChatWidget
 from ui.task_list_widget import TaskListWidget
 from ui.thinking_widget import ThinkingWidget
 from ui.system_message_widget import SystemMessageWidget
-from ui.message_router import MessageRouter
 from ui.user_input_widget import UserInputWidget, UserInputSubmitted
+from ui.message_router import MessageRouter
+from core.lib.my_base_agent_lib import GlobalAgentRegistry
+from config import logger, PROJECT_NAME
 
 
 class MultiAgentApp(App):
@@ -48,14 +49,14 @@ class MultiAgentApp(App):
         height: 100%; 
         border: solid yellow;
     }
-    
+
     #system_messages {
         column-span: 3;
         width: 100%;
         height: 100%;
         border: solid magenta;
     }
-    
+
     #user_input {
         column-span: 3;
         width: 100%;
@@ -69,6 +70,10 @@ class MultiAgentApp(App):
         ("c", "clear", "清空"),
     ]
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._task_running = False  # 🔒 任务执行标志
+
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         yield ChatWidget(id="chat")
@@ -79,14 +84,25 @@ class MultiAgentApp(App):
         yield Footer()
 
     async def on_mount(self):
+        """应用启动时执行"""
         logger.info("🚀 应用启动")
-        # 不再自动运行任务，等待用户输入
-        
+
+        # 🔒 程序启动时清空所有 Agent（这是你的本意）
+        GlobalAgentRegistry._agents.clear()
+        GlobalAgentRegistry._monitored_agent_ids.clear()
+        logger.info("🧹 清空 Agent 注册表")
+
     async def on_user_input_submitted(self, event: UserInputSubmitted):
         """处理用户输入提交"""
-        try:
-            GlobalAgentRegistry._agents.clear()
+        # 🔒 检查是否有任务正在执行
+        if self._task_running:
+            system_message_widget = self.query_one("#system_messages", SystemMessageWidget)
+            await system_message_widget.add_message("⚠️ 任务正在执行中，请等待完成后再提交新任务", "warning")
+            return
 
+        self._task_running = True
+
+        try:
             # 获取组件
             chat_widget = self.query_one("#chat", ChatWidget)
             task_widget = self.query_one("#tasks", TaskListWidget)
@@ -94,7 +110,27 @@ class MultiAgentApp(App):
             system_message_widget = self.query_one("#system_messages", SystemMessageWidget)
             user_input_widget = self.query_one("#user_input", UserInputWidget)
 
-            # 创建路由器 - 现在包含系统消息组件
+            # 🔒 禁用输入框
+            user_input_widget.disabled = True
+
+            # ✅ 不清空 Agent 列表（保留对话历史）
+            # 只清理子 Agent（保留主 Agent）
+            agents_to_keep = []
+            for agent in GlobalAgentRegistry._agents:
+                # 保留主 Agent（名字是 PROJECT_NAME）
+                if agent.name == PROJECT_NAME:
+                    agents_to_keep.append(agent)
+                # 可选：也可以保留其他需要保留的 Agent
+                # elif agent.name.startswith("SomePrefix"):
+                #     agents_to_keep.append(agent)
+
+            # 只有当有 Agent 需要清理时才执行
+            if len(agents_to_keep) < len(GlobalAgentRegistry._agents):
+                GlobalAgentRegistry._agents.clear()
+                GlobalAgentRegistry._agents.extend(agents_to_keep)
+                logger.info(f"🧹 清理子 Agent，保留 {len(agents_to_keep)} 个主 Agent")
+
+            # 创建路由器
             router = MessageRouter(chat_widget, task_widget, thinking_widget, system_message_widget)
 
             # 用户消息
@@ -106,13 +142,13 @@ class MultiAgentApp(App):
 
             await chat_widget.add_message(user_msg, last=True)
 
-            # 初始化 Agent
+            # 🔒 使用单例 Agent（保留对话历史）
             ari = MainReActAgent()
 
             # 调用 Agent
             main_task = ari(user_msg)
 
-            # 流式处理 - 只做路由
+            # 流式处理
             async for msg, last in GlobalAgentRegistry.stream_all_messages(main_task=main_task):
                 await router.route_message(msg, last)
 
@@ -120,12 +156,37 @@ class MultiAgentApp(App):
 
         except Exception as e:
             logger.error(f"❌ 任务执行出错: {e}")
-            # 发送错误到系统消息
+            import traceback
+            logger.error(traceback.format_exc())
             system_message_widget = self.query_one("#system_messages", SystemMessageWidget)
             await system_message_widget.add_message(f"❌ 任务执行出错: {e}", "error")
 
+        finally:
+            # 🔒 释放执行标志并重新启用输入框
+            self._task_running = False
+            user_input_widget = self.query_one("#user_input", UserInputWidget)
+            user_input_widget.disabled = False
+
+            # 重新聚焦输入框
+            input_area = user_input_widget.query_one("#input_area", TextArea)
+            input_area.focus()
+
     def action_clear(self):
         """清空所有内容"""
+        # 等待任务完成
+        if self._task_running:
+            logger.warning("⚠️ 任务正在执行，无法清空")
+            return
+
+        # 🔒 清理所有 Agent（包括主 Agent）
+        GlobalAgentRegistry._agents.clear()
+        GlobalAgentRegistry._monitored_agent_ids.clear()
+
+        # 🔒 重置主 Agent 单例（清空对话历史）
+        MainReActAgent.reset_instance()
+        logger.info("🔄 主 Agent 已重置")
+
+        # 清空 UI
         chat_widget = self.query_one("#chat", ChatWidget)
         task_widget = self.query_one("#tasks", TaskListWidget)
         thinking_widget = self.query_one("#thinking", ThinkingWidget)
@@ -141,10 +202,8 @@ class MultiAgentApp(App):
 
 if __name__ == "__main__":
     app = MultiAgentApp()
-    # 启用 tokyo-night 主题（如果可用）
     try:
         app.theme = "tokyo-night"
     except Exception:
-        # 如果主题不可用，使用默认主题
         pass
     app.run()
