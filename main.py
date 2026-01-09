@@ -79,7 +79,7 @@ class MultiAgentApp(App):
     Screen {
         layout: grid;
         grid-size: 2 6;
-        grid-rows: 1fr 10fr 5fr 4fr 3fr 1fr;
+        grid-rows: 2fr 10fr 5fr 4fr 3fr 1fr;
         grid-columns: 3fr 1fr;
     }
 
