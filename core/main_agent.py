@@ -145,7 +145,7 @@ class MainReActAgent(MyBaseReActAgent):
         # 创建长期记忆
         long_term_memory = Mem0LongTermMemory(
             agent_name=PROJECT_NAME,
-            user_name="user",
+            user_name="Ethan",
             model=OpenAIChatModel(
                 api_key=LLM_API_KEY,
                 client_kwargs={"base_url": LLM_BASE_URL},

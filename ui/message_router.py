@@ -11,16 +11,19 @@ from config import PROJECT_NAME, logger
 class MessageRouter:
     """消息路由器 - 根据消息类型分发到不同组件"""
 
-    def __init__(self, chat_widget, task_widget, thinking_widget=None):
+    def __init__(self, chat_widget, task_widget, thinking_widget=None, system_message_widget=None):
         self.chat_widget = chat_widget
         self.task_widget = task_widget
         self.thinking_widget = thinking_widget
-
-        # 业务状态
+        self.system_message_widget = system_message_widget        # 业务状态
         self.steps = []
         self.planning_completed = False
 
         logger.info("✅ MessageRouter 初始化完成")
+    async def _send_system_message(self, message: str, level: str = "info"):
+        """发送系统消息到系统消息组件"""
+        if self.system_message_widget:
+            await self.system_message_widget.add_message(message, level)
 
     async def route_message(self, msg, last: bool):
         """
@@ -77,15 +80,17 @@ class MessageRouter:
                 tool_name = block.get("name")
                 tool_input = block.get("input", {})
 
+                # 发送系统消息 - 工具调用开始
+                if tool_name:
+                    await self._send_system_message(f"🔧 执行工具: {tool_name}", "info")
+
                 # 只显示有意义的工具调用（input 不为空）
-                if tool_input:
+                if tool_input and self.thinking_widget:
                     await self.thinking_widget.add_thinking(
                         agent_name=msg.name,
                         tool_name=tool_name,
                         tool_input=tool_input
-                    )
-
-            # 2. 处理推理模型的 thinking 块
+                    )            # 2. 处理推理模型的 thinking 块
             elif block_type == "thinking":
                 thinking_content = block.get("text") or block.get("content", "")
 
@@ -100,6 +105,19 @@ class MessageRouter:
     async def _handle_main_agent(self, msg, last: bool):
         """处理主 Agent 消息"""
         await self.chat_widget.add_message(msg, last)
+
+        # 检查思考过程中的长期记忆操作
+        if isinstance(msg.content, list):
+            for block in msg.content:
+                if isinstance(block, dict):
+                    # 检测长期记忆相关的思考内容
+                    if block.get("type") == "thinking":
+                        thinking_content = block.get("text") or block.get("content", "")
+                        if "long_term_memory" in thinking_content.lower() or "长期记忆" in thinking_content:
+                            if "retrieve" in thinking_content.lower() or "检索" in thinking_content:
+                                await self._send_system_message("🧠 从长期记忆检索相关信息", "info")
+                            elif "save" in thinking_content.lower() or "保存" in thinking_content:
+                                await self._send_system_message("💾 保存重要信息到长期记忆", "info")
 
         # 检查工具调用
         if isinstance(msg.content, list) and len(msg.content) > 0:
@@ -147,20 +165,32 @@ class MessageRouter:
 
                 self.planning_completed = True
                 await self.task_widget.update_tasks(self.steps)
+                await self._send_system_message(f"✅ 任务规划完成，共 {len(self.steps)} 个步骤", "success")
                 logger.info(f"✅ 规划完成，共 {len(self.steps)} 个任务")
 
         except json.JSONDecodeError as e:
+            await self._send_system_message(f"❌ JSON 解析失败: {e}", "error")
             logger.error(f"❌ JSON 解析失败: {e}")
-
     async def _handle_worker(self, msg, last: bool):
         """处理 Worker Agent 消息"""
         await self.chat_widget.add_message(msg, last)
 
         try:
-            task_id = int(msg.name.split("-")[-1])
+            # 提取Worker名称和任务ID
+            worker_name_parts = msg.name.split("-")
+            if len(worker_name_parts) >= 2:
+                task_id = int(worker_name_parts[-1])
+                worker_base_name = "-".join(worker_name_parts[:-1]).replace("Worker_", "")
+                
+                # 发送系统消息 - Worker创建（只在第一次接收到消息时）
+                if not last and self.steps and task_id <= len(self.steps) and self.steps[task_id - 1]["status"] == 0:
+                    await self._send_system_message(f"👷 创建专家助手: {worker_base_name}", "info")
+            else:
+                task_id = None
+
             text_content = self._extract_text(msg.content)
 
-            if not text_content or not self.steps or task_id > len(self.steps):
+            if not text_content or not self.steps or not task_id or task_id > len(self.steps):
                 return
 
             if not last:
@@ -174,13 +204,18 @@ class MessageRouter:
                 self.steps[task_id - 1]["result"] = text_content
                 await self.task_widget.update_task_status(task_id, status=3, result=text_content)
 
+                # 发送系统消息 - Worker完成
+                worker_base_name = "-".join(worker_name_parts[:-1]).replace("Worker_", "")
+                await self._send_system_message(f"✅ 专家助手 {worker_base_name} 完成任务", "success")
+
                 # 检查是否全部完成
                 if all(step["status"] == 3 for step in self.steps):
+                    await self._send_system_message("🎉 所有任务完成！", "success")
                     logger.info("🎉 所有任务完成！")
 
         except (ValueError, IndexError) as e:
+            await self._send_system_message(f"❌ 解析 Worker 消息失败: {e}", "error")
             logger.error(f"❌ 解析 Worker 消息失败: {e}")
-
     @staticmethod
     def _extract_text(content) -> str:
         """提取消息文本内容"""

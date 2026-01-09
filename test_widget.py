@@ -4,6 +4,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 import asyncio
 from textual.app import App, ComposeResult
+from textual.containers import Vertical
 from textual.widgets import Header, Footer
 
 from agentscope.message import Msg
@@ -14,6 +15,7 @@ from core.main_agent import MainReActAgent
 from ui.chat_widget import ChatWidget
 from ui.task_list_widget import TaskListWidget
 from ui.thinking_widget import ThinkingWidget
+from ui.system_message_widget import SystemMessageWidget
 from ui.message_router import MessageRouter
 
 
@@ -23,7 +25,8 @@ class MultiAgentApp(App):
     CSS = """
     Screen {
         layout: grid;
-        grid-size: 3 1;
+        grid-size: 3 2;
+        grid-rows: 1fr 4;
         grid-columns: 2fr 1fr 1fr;
     }
 
@@ -44,6 +47,13 @@ class MultiAgentApp(App):
         height: 100%; 
         border: solid yellow;
     }
+    
+    #system_messages {
+        column-span: 3;
+        width: 100%;
+        height: 100%;
+        border: solid magenta;
+    }
     """
 
     BINDINGS = [
@@ -56,6 +66,7 @@ class MultiAgentApp(App):
         yield ChatWidget(id="chat")
         yield TaskListWidget(id="tasks")
         yield ThinkingWidget(id="thinking")
+        yield SystemMessageWidget(id="system_messages")
         yield Footer()
 
     async def on_mount(self):
@@ -71,9 +82,10 @@ class MultiAgentApp(App):
             chat_widget = self.query_one("#chat", ChatWidget)
             task_widget = self.query_one("#tasks", TaskListWidget)
             thinking_widget = self.query_one("#thinking", ThinkingWidget)
+            system_message_widget = self.query_one("#system_messages", SystemMessageWidget)
 
-            # 创建路由器
-            router = MessageRouter(chat_widget, task_widget, thinking_widget)
+            # 创建路由器 - 现在包含系统消息组件
+            router = MessageRouter(chat_widget, task_widget, thinking_widget, system_message_widget)
 
             # 初始化 Agent
             ari = MainReActAgent()
@@ -98,16 +110,21 @@ class MultiAgentApp(App):
 
         except Exception as e:
             logger.error(f"❌ 任务执行出错: {e}")
+            # 发送错误到系统消息
+            system_message_widget = self.query_one("#system_messages", SystemMessageWidget)
+            await system_message_widget.add_message(f"❌ 任务执行出错: {e}", "error")
 
     def action_clear(self):
         """清空所有内容"""
         chat_widget = self.query_one("#chat", ChatWidget)
         task_widget = self.query_one("#tasks", TaskListWidget)
         thinking_widget = self.query_one("#thinking", ThinkingWidget)
+        system_message_widget = self.query_one("#system_messages", SystemMessageWidget)
 
         asyncio.create_task(chat_widget.clear_messages())
         asyncio.create_task(task_widget.clear_tasks())
         asyncio.create_task(thinking_widget.clear_thinking())
+        asyncio.create_task(system_message_widget.clear_messages())
 
 
 if __name__ == "__main__":
