@@ -126,8 +126,13 @@ class MessageRouter:
                 tool_input = block.get("input", {})
 
                 # 发送系统消息 - 工具调用开始
-                if tool_name:
+                if tool_name and tool_name not in ["retrieve_from_memory","record_to_memory","_plan_task"]:
                     await self._send_system_message(f"🔧 执行工具: {tool_name}", "info")
+
+                if tool_name == "record_to_memory":
+                    await self._send_system_message("💾 Ari 正在记忆美好的瞬间...", "info")
+                if tool_name == "retrieve_from_memory":
+                    await self._send_system_message("💫 正在回忆...", "info")
 
                 # 只显示有意义的工具调用（input 不为空）
                 if tool_input and self.thinking_widget:
@@ -162,7 +167,7 @@ class MessageRouter:
                         thinking_content = block.get("text") or block.get("content", "")
                         if "long_term_memory" in thinking_content.lower() or "长期记忆" in thinking_content:
                             if "retrieve" in thinking_content.lower() or "检索" in thinking_content:
-                                await self._send_system_message("🧠 从长期记忆检索相关信息", "info")
+                                await self._send_system_message("💡 从长期记忆检索相关信息", "info")
                             elif "save" in thinking_content.lower() or "保存" in thinking_content:
                                 await self._send_system_message("💾 保存重要信息到长期记忆", "info")
 
@@ -178,6 +183,7 @@ class MessageRouter:
                     if task_id and self.steps and task_id <= len(self.steps):
                         self.steps[task_id - 1]["status"] = 1
                         await self.task_widget.update_task_status(task_id, status=1)
+
 
     async def _handle_planning(self, msg, last: bool):
         """
