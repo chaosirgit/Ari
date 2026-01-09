@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 from threading import Lock
 from agentscope.model import OpenAIChatModel
 from agentscope.formatter import OpenAIChatFormatter
-from agentscope.tool import Toolkit, ToolResponse
+from agentscope.tool import Toolkit, ToolResponse, execute_shell_command, execute_python_code
 from agentscope.memory import InMemoryMemory, Mem0LongTermMemory
 from agentscope.embedding import OpenAITextEmbedding, FileEmbeddingCache
 from agentscope.message import Msg, TextBlock
@@ -32,6 +32,9 @@ from config import (
     MEMORY_PATH,
     logger,
 )
+from tools.ex_insert_text_file import ex_insert_text_file
+from tools.ex_view_text_file import ex_view_text_file
+from tools.ex_write_text_file import ex_write_text_file
 
 
 class LongTermMemoryManager:
@@ -297,6 +300,13 @@ class MainReActAgent(MyBaseReActAgent):
 
         # 注册创建子智能体工具
         toolkit.register_tool_function(create_worker)
+
+        # 注册普通工具
+        toolkit.register_tool_function(execute_shell_command)
+        toolkit.register_tool_function(execute_python_code)
+        toolkit.register_tool_function(ex_view_text_file)
+        toolkit.register_tool_function(ex_write_text_file)
+        toolkit.register_tool_function(ex_insert_text_file)
 
         memory = InMemoryMemory()
 

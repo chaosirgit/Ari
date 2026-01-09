@@ -11,6 +11,9 @@ from agentscope.tool import ToolResponse, Toolkit, execute_python_code, execute_
 
 from config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_NAME
 from core.lib.my_base_agent_lib import MyBaseReActAgent
+from tools.ex_insert_text_file import ex_insert_text_file
+from tools.ex_view_text_file import ex_view_text_file
+from tools.ex_write_text_file import ex_write_text_file
 
 
 async def create_worker(
@@ -55,6 +58,10 @@ async def create_worker(
         toolkit = Toolkit()
         toolkit.register_tool_function(execute_python_code)
         toolkit.register_tool_function(execute_shell_command)
+        toolkit.register_tool_function(ex_view_text_file)
+        toolkit.register_tool_function(ex_write_text_file)
+        toolkit.register_tool_function(ex_insert_text_file)
+
         worker = MyBaseReActAgent(
             name=f"Worker_{agent_name}-{task_id}",
             sys_prompt=enhanced_work_prompt,  # 🔒 使用增强后的 prompt
