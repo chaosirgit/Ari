@@ -5,9 +5,56 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="8333f56a-3ea7-4d6e-9c5f-b57f3d37cf2c" name="更改" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/data_source_mapping.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/main_agent.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/main_agent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tools/create_worker.py" beforeDir="false" afterPath="$PROJECT_DIR$/tools/create_worker.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug_log.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/debug_log.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/0498b6c0b443401e022f4bf2ef3e1fc170edc71bbb0e0c89d5b046429dae0309.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/06afcd4c6501c2e4af03869da5ce016d6213ccab7f54b6de01eab8f045e88fce.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/081d6b3d7f1d92b38c84352d01ef0f15cb9508c167baf666895af9b4321bd00c.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/0a91af16fb3b279351b6a7723c4a5c0fb638af9e2954c46841f5626313d05d13.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/1df079c25f073eb23a527b013576e8d873d40f1383847edd66bb49203fc04200.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/218c213e28f8411002f5f137ff474f2e2b75f6f9b9ef68652ad0d9f0f2294ac1.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/23ac22afa20bcd32ac78240bc4196a6803cab968500879275ee794eee5cbc215.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/2f8cfe1614ab622b0b0422491be437553981c4716276d0c61fb653555df697ca.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/2fda01a9438ee54e11117dcd3cc948201d6949d70458e2bceef1d95fc566245c.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/43f8fb2e53cef44e0a6ef62b077ba085e2655802d0824de1ec73909207a5985c.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/4404b3a83fb50b2afcd1fffe6a6021f2ddcea60a4f124ce6fae3003985f3e436.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/466c92a6fdc1ed611b4b1071f513490d3a7dbf457a21e2983b1fef6e077e8c25.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/4fc081d4a211441165d2400744cf0f2fb60e3fa5eba97d0dff49bc85ab16b8c6.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/55b4c70749923dcb6cfae333cd7afbad0f1cc1c3887532db4e2af605c62b0054.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/5e78e1f76a5e59af9ebe528ff1a508728b85daadf10b7180365faa3eff5421ae.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/630ba5a4249f62e7cd3fc6e45d0de577b1da2f532539fc6f6763beee8550648d.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/700c2611401961698145981ce1a647005dc0bd4bb5fe749033977de7381c15f3.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/75d6caea180d129961b491e05353174e7ac7998f07d200f3e63fada72b5703cd.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/8855791f345515c1e5e2cfa18e98583388bc796204190102532cd4b10df7d173.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/8ec5e693778bb8e93f1b3e4ece1da321b96777f8af304f9c29f69d1c7e30e38c.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/90e50c2d1047aab504770fa4d5b2deb8a0c28973f3fa87061980e6ee75f0e990.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/991fb35c502c9fa4c1130e8b2847cdbe54da7f48c8f09eb2ac05249849bff96f.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/9b5d921257e24b78437cc65b182939d46e3c0ea460d4ebbc2f5b078c02d50593.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/9cc2c954478ff69ef6f61991dd78904b711c356cb02dd1e4c6419c1cf22b0a55.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/9dbed1f5132598659b875bf5bc1a7d34d0aab9547e2e564b9cb7dd81d15115e2.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/ad1db29a6fbf7ba6e04a68801f0fd5bd2fe290e5e4754a2089ca13fb3dc025c0.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/b9b8cea34d25d432ba33fe61472a199ea80ec8ffe293b7b2091a1c6bc869b339.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/bb577c28947be63c7b300440fa94b1ce7b48f96d278c1c3b0b1e257c91a9c1f3.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/be97dcef703fadf4063b2b0ef44e0204575ecca907f8342aab415596337f4ebf.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/c6193deae123e5c92406507ba9c3e6dd951bf62249905212812fb3ce7ab821ff.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/d7c8c2066d8b728ccd8f32641a0420fb230163808c59eafa70ba7483015fd87b.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/db49de3ed92e9afff040687744518ac20a3b1bd4e95adf178553f9473a749ba1.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/dc647556dc29ad6b818ea4a3b13cfd8a1626635056d003bed2f3806ca54cf856.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/ebc7549661333898fb417efd05fd18343c47b18093deb3eef860ae3ffeeed11b.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/ef68660842789007986b28c73515ca63b83497c5d0ad55bcbec2824068e087aa.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/eff5058810cdc643a5e9d7b9b23d092857ba8a1eceb5d71ce8575beded073671.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/f1a136e0e37173c81654aac072370c76d21f121d77d5b5d1c73bda58ab8435ff.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/f350a8dee1a9ebb90485c8991533f2a642c525eadb9e2b5a1ef9668adfd18f7c.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/f4d8934b2fa5a46420925ed21eef4fc18558a2ca38f2fc6e5cb9c3d8af2c0b78.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/f4db90387a3fe64c85043d00b328eeccd0a96eb93084d0d6822fff431a4bf1a3.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/embedding_cache/fdbdecc5128b41e8ce7d640cb90fde75924ceebe213301ddd2607d50af145c7b.npy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/vector_store/.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/vector_store/collection/mem0/storage.sqlite" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/memory/vector_store/meta.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -72,7 +119,7 @@
       <recent name="$PROJECT_DIR$/core" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.test">
+  <component name="RunManager" selected="Python.main">
     <configuration name="app" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Ari" />
       <option name="ENV_FILES" value="" />
@@ -113,6 +160,30 @@
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tools/create_worker.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Ari" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -169,37 +240,13 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="test_ui" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="Ari" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="RUN_TOOL" value="" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test_ui.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.main" />
         <item itemvalue="Python.test" />
         <item itemvalue="Python.test_simple" />
         <item itemvalue="Python.app" />
         <item itemvalue="Python.create_worker" />
-        <item itemvalue="Python.test_ui" />
       </list>
     </recent_temporary>
   </component>
@@ -234,12 +281,23 @@
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Ari$test_ui.coverage" NAME="test_ui 覆盖结果" MODIFIED="1767643343526" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Ari$test.coverage" NAME="test 覆盖结果" MODIFIED="1767896116076" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Ari$ltm_test.coverage" NAME="ltm_test 覆盖结果" MODIFIED="1767432571056" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/Ari$main.coverage" NAME="main 覆盖结果" MODIFIED="1767640212828" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Ari$create_worker.coverage" NAME="create_worker 覆盖结果" MODIFIED="1767854486884" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tools" />
+    <SUITE FILE_PATH="coverage/Ari$main.coverage" NAME="main 覆盖结果" MODIFIED="1767972553276" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Ari$angentscope_version.coverage" NAME="angentscope_version 覆盖结果" MODIFIED="1767382999373" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Ari$test_simple.coverage" NAME="test_simple 覆盖结果" MODIFIED="1767886951941" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Ari$app.coverage" NAME="app 覆盖结果" MODIFIED="1767857294385" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/ui" />
