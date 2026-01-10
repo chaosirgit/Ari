@@ -10,6 +10,7 @@ from agentscope.model import OpenAIChatModel
 from agentscope.formatter import OpenAIChatFormatter
 from agentscope.tool import Toolkit, ToolResponse, execute_shell_command, execute_python_code
 from agentscope.memory import InMemoryMemory, Mem0LongTermMemory
+from core.lib.fixed_openai_embedding import FixedOpenAITextEmbedding
 from agentscope.embedding import OpenAITextEmbedding, FileEmbeddingCache
 from agentscope.message import Msg, TextBlock
 from mem0.vector_stores.configs import VectorStoreConfig
@@ -93,7 +94,8 @@ class LongTermMemoryManager:
             Mem0LongTermMemory: 新创建的长期记忆实例
         """
         # 创建嵌入模型，带文件缓存
-        embedder = OpenAITextEmbedding(
+        # 创建嵌入模型，带文件缓存（使用修复版本）
+        embedder = FixedOpenAITextEmbedding(
             model_name=EMBEDDING_MODEL_NAME,
             api_key=EMBEDDING_API_KEY,
             base_url=EMBEDDING_BASE_URL,
@@ -104,7 +106,6 @@ class LongTermMemoryManager:
                 max_cache_size=10,  # 最大缓存大小（MB）
             ),
         )
-
         # 创建长期记忆
         # 创建长期记忆（使用修复版本）
         long_term_memory = FixedMem0LongTermMemory(
