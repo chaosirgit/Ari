@@ -75,6 +75,7 @@ async def create_worker(
             ),
             formatter=OpenAIChatFormatter(),
             toolkit=toolkit,
+            max_iters=20
         )
         res = await worker(Msg("user", task_description, "user"))
 

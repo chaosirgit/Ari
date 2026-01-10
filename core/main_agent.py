@@ -15,6 +15,7 @@ from agentscope.message import Msg, TextBlock
 from mem0.vector_stores.configs import VectorStoreConfig
 from core.planning_agent import PlanningReActAgent
 from core.lib.my_base_agent_lib import MyBaseReActAgent
+from core.lib.fixed_mem0_memory import FixedMem0LongTermMemory
 
 # 导入协调者提供的 create_worker 工具
 from tools.create_worker import create_worker
@@ -105,7 +106,8 @@ class LongTermMemoryManager:
         )
 
         # 创建长期记忆
-        long_term_memory = Mem0LongTermMemory(
+        # 创建长期记忆（使用修复版本）
+        long_term_memory = FixedMem0LongTermMemory(
             agent_name=agent_name,
             user_name=user_name,
             model=OpenAIChatModel(
@@ -124,7 +126,6 @@ class LongTermMemoryManager:
                 }
             )
         )
-
         logger.info(f"✅ 长期记忆初始化完成: {MEMORY_PATH}")
         return long_term_memory
 
