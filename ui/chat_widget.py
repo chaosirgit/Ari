@@ -496,8 +496,7 @@ class ChatWidget(Widget):
     def _schedule_scroll(self):
         """延迟滚动（防抖）"""
         if self._scroll_timer is not None:
-            self.remove_timer(self._scroll_timer)
-
+            self._scroll_timer.stop()
         self._scroll_timer = self.set_timer(0.05, self._do_scroll)
 
     def _do_scroll(self):
@@ -605,5 +604,5 @@ class ChatWidget(Widget):
         await scroll_container.remove_children()
         self.stream_blocks.clear()
         if self._scroll_timer is not None:
-            self.remove_timer(self._scroll_timer)
+            self._scroll_timer.stop()
             self._scroll_timer = None
