@@ -349,12 +349,22 @@ class MessageStreamer:
 
         self._task = asyncio.create_task(self._main_coro)
 
+        # 🔧 修复：定义命名函数而非 lambda，便于后续移除
+        def safe_done_callback(_):
+            """安全的完成回调，检查队列是否存在"""
+            if cls._message_queue is not None:
+                try:
+                    cls._message_queue.put_nowait(self._end_signal)
+                except Exception as e:
+                    logger.debug(f"队列已关闭，忽略结束信号: {e}")
+
+        # 保存回调引用，以便在 finally 中移除
+        self._done_callback = safe_done_callback
+
         if self._task.done():
             await cls._message_queue.put(self._end_signal)
         else:
-            self._task.add_done_callback(
-                lambda _: cls._message_queue.put_nowait(self._end_signal)
-            )
+            self._task.add_done_callback(safe_done_callback)
 
         try:
             while True:
@@ -383,10 +393,20 @@ class MessageStreamer:
                     else:
                         continue
         except asyncio.CancelledError:
-            # 任务被取消，标记为中断
             self._interrupted = True
             raise
         finally:
+            # 🔧 先移除回调，避免在队列清理后触发
+            if self._task and not self._task.done():
+                try:
+                    # remove_done_callback() 返回移除的回调数量
+                    removed_count = self._task.remove_done_callback(self._done_callback)
+                    if removed_count > 0:
+                        logger.debug(f"成功移除 {removed_count} 个回调")
+                except Exception as e:
+                    logger.debug(f"移除回调时出错（可忽略）: {e}")
+
+            # 检查任务异常
             try:
                 if self._task and not self._task.cancelled():
                     exc = self._task.exception()
@@ -394,6 +414,8 @@ class MessageStreamer:
                         logger.error(f"主任务异常: {exc}")
             except Exception:
                 pass
+
+            # 最后清理队列
             cls._message_queue = None
             cls._monitored_agent_ids.clear()
 
@@ -403,6 +425,8 @@ class MessageStreamer:
         根据 AgentScope 文档，这会取消当前的 reply 函数并执行 handle_interrupt
         """
         try:
+            self._interrupted = True
+
             # 调用 AgentScope 的 interrupt 方法
             if hasattr(self._agent, 'interrupt'):
                 logger.info("调用 agent.interrupt() 方法")
@@ -412,9 +436,11 @@ class MessageStreamer:
             if self._task and not self._task.done():
                 self._task.cancel()
                 try:
-                    await self._task
+                    # 🆕 添加超时等待，避免无限阻塞
+                    await asyncio.wait_for(self._task, timeout=2.0)
+                except asyncio.TimeoutError:
+                    logger.warning("任务取消超时，强制终止")
                 except asyncio.CancelledError:
-                    self._interrupted = True
                     logger.info("任务已成功取消")
         except Exception as e:
             logger.error(f"中断任务时出错: {e}")
