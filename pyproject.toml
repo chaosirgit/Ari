@@ -9,8 +9,7 @@ dependencies = [
     "mem0ai>=1.0.1",
     "packaging>=25.0",
     "pyperclip>=1.11.0",
-    "textual>=7.0.0",
-    "warnings",
+    "textual>=7.0.0"
 ]
 
 [tool.uv.sources]
