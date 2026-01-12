@@ -9,6 +9,7 @@ dependencies = [
     "chromadb>=1.4.0",
     "mem0ai>=1.0.1",
     "packaging>=25.0",
+    "prompt-toolkit>=3.0.52",
     "pyperclip>=1.11.0",
     "textual>=7.0.0",
 ]
