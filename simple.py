@@ -12,6 +12,7 @@ import asyncio
 import sys
 import json
 import time
+import warnings
 from typing import AsyncGenerator, Tuple, Dict, Any
 from collections import defaultdict
 
@@ -24,6 +25,13 @@ from core.lib.my_base_agent_lib import GlobalAgentRegistry
 from prompt_toolkit import PromptSession
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.history import InMemoryHistory
+
+# 🔑 过滤掉 asyncio.iscoroutinefunction 的弃用警告
+warnings.filterwarnings(
+    "ignore",
+    category=DeprecationWarning,
+    message=".*asyncio.iscoroutinefunction.*"
+)
 
 
 class TokenCounter:

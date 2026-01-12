@@ -10,6 +10,7 @@ dependencies = [
     "packaging>=25.0",
     "pyperclip>=1.11.0",
     "textual>=7.0.0",
+    "warnings",
 ]
 
 [tool.uv.sources]
