@@ -326,6 +326,19 @@ class MultiAgentApp(App):
                     logger.warning("⚠️ 应用已停止，终止任务")
                     break
 
+                # 🔥 新增：检查中断请求并处理
+                if self._interrupt_requested:
+                    logger.info("⏹️ 收到中断请求，调用 Agent 中断处理")
+                    interrupt_msg = await ari.handle_interrupt()
+                    
+                    # 发送中断消息到 UI
+                    try:
+                        self.call_from_thread(dispatch_ui_update, interrupt_msg, True)
+                    except RuntimeError:
+                        pass
+                        
+                    break  # 跳出循环
+
                 # 将 router.route_message 调度到主线程执行
                 try:
                     self.call_from_thread(dispatch_ui_update, msg, last)
@@ -364,6 +377,7 @@ class MultiAgentApp(App):
         finally:
             # 释放执行标志并重新启用输入框
             self._task_running = False
+            self._interrupt_requested = False  # 🔥 重置中断标志
             if self.is_running:
                 try:
                     self.call_from_thread(self._update_status_bar, "空闲")
