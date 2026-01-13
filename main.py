@@ -202,11 +202,13 @@ class MultiAgentApp(App):
     BINDINGS = [
         ("ctrl+q", "quit", "退出"),
         ("c", "clear", "清空"),
+        ("ctrl+c", "interrupt", "打断"),
         ("ctrl+l", "toggle_log", "日志"),
     ]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._interrupt_requested = False
         self._task_running = False
 
     def compose(self) -> ComposeResult:
@@ -432,6 +434,20 @@ class MultiAgentApp(App):
                 logger.error(traceback.format_exc())
 
         asyncio.create_task(do_clear())
+
+    def action_interrupt(self):
+        """打断当前正在执行的任务"""
+        if self._task_running:
+            self._interrupt_requested = True
+            system_message_widget = self.query_one("#system_messages", SystemMessageWidget)
+            asyncio.create_task(
+                system_message_widget.add_message("⏹️ 请求中断当前任务...", "warning")
+            )
+        else:
+            system_message_widget = self.query_one("#system_messages", SystemMessageWidget)
+            asyncio.create_task(
+                system_message_widget.add_message("ℹ️ 没有正在执行的任务", "info")
+            )
 
     def action_toggle_log(self):
         """切换日志显示"""
