@@ -9,6 +9,7 @@ from datetime import datetime
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Static
 from textual.widgets import TextArea
+from textual import work
 
 from agentscope.message import Msg
 from core.main_agent import MainReActAgent
@@ -36,7 +37,7 @@ class StatusBarWidget(Static):
         super().__init__(**kwargs)
         self._task_status = "空闲"
         self._agent_count = 0
-        self._update_timer = None
+        self._update_task = None
 
     def compose(self) -> ComposeResult:
         yield Static("", id="status_content", classes="status_text")
@@ -44,8 +45,19 @@ class StatusBarWidget(Static):
     def on_mount(self):
         """挂载时启动定时更新"""
         self.update_status()
-        # 每秒更新一次时间
-        self._update_timer = self.set_interval(1.0, self.update_status)
+        self._update_task = asyncio.create_task(self._auto_update())
+
+    def on_unmount(self):
+        if self._update_task:
+            self._update_task.cancel()
+
+    async def _auto_update(self):
+        try:
+            while True:
+                await asyncio.sleep(1.0)
+                self.update_status()
+        except asyncio.CancelledError:
+            pass
 
     def update_status(self, task_status: str = None, agent_count: int = None):
         """更新状态栏"""
@@ -243,6 +255,16 @@ class MultiAgentApp(App):
             await system_message_widget.add_message("⚠️ 任务正在执行中，请等待完成后再提交新任务", "warning")
             return
 
+        # 立即禁用输入框，防止重复提交
+        user_input_widget = self.query_one("#user_input", UserInputWidget)
+        user_input_widget.disabled = True
+        
+        # 启动后台任务
+        self.run_agent_task(event.content)
+
+    @work(thread=True)
+    async def run_agent_task(self, content: str):
+        """在后台执行 Agent 任务"""
         self._task_running = True
         self._update_status_bar("执行中")
 
@@ -252,10 +274,7 @@ class MultiAgentApp(App):
             task_widget = self.query_one("#tasks", TaskListWidget)
             thinking_widget = self.query_one("#thinking", ThinkingWidget)
             system_message_widget = self.query_one("#system_messages", SystemMessageWidget)
-            user_input_widget = self.query_one("#user_input", UserInputWidget)
-
-            # 禁用输入框
-            user_input_widget.disabled = True
+            # 注意：user_input_widget 可能在此时已被禁用，但我们仍需引用它来重新启用
 
             # 清理子 Agent（保留主 Agent）
             agents_to_keep = []
@@ -274,11 +293,19 @@ class MultiAgentApp(App):
             # 用户消息
             user_msg = Msg(
                 name="user",
-                content=event.content,
+                content=content,
                 role="user"
             )
 
-            await chat_widget.add_message(user_msg, last=True)
+            # 在后台线程操作 UI 必须通过 call_from_thread
+            async def add_user_msg():
+                await chat_widget.add_message(user_msg, last=True)
+
+            if self.is_running:
+                try:
+                    self.call_from_thread(add_user_msg)
+                except RuntimeError:
+                    pass
 
             # 使用单例 Agent
             ari = MainReActAgent()
@@ -287,35 +314,70 @@ class MultiAgentApp(App):
             main_task = ari(user_msg)
 
             # 流式处理
+            
+            async def dispatch_ui_update(m, l):
+                await router.route_message(m, l)
+
             async for msg, last in GlobalAgentRegistry.stream_all_messages(main_task=main_task):
-                await router.route_message(msg, last)
-                # 实时更新 Agent 数量
-                self._update_status_bar("执行中")
+                # 检查应用是否仍在运行
+                if not self.is_running:
+                    logger.warning("⚠️ 应用已停止，终止任务")
+                    break
+
+                # 将 router.route_message 调度到主线程执行
+                try:
+                    self.call_from_thread(dispatch_ui_update, msg, last)
+                except RuntimeError as re:
+                    if "App is not running" in str(re):
+                        logger.warning("⚠️ 应用已停止，无法更新UI")
+                        break
+                    raise re
+                
+            # 循环结束后再更新一次状态栏（虽然 finally 会更新为空闲）
+            if self.is_running:
+                try:
+                    self.call_from_thread(self._update_status_bar, "执行中")
+                except RuntimeError:
+                    pass
 
             logger.info("🎉 任务完成")
-            await system_message_widget.add_message("✅ 任务执行完成", "success")
+            if self.is_running:
+                try:
+                    self.call_from_thread(system_message_widget.add_message, "✅ 任务执行完成", "success")
+                except RuntimeError:
+                    pass
 
         except Exception as e:
             logger.error(f"❌ 任务执行出错: {e}")
             import traceback
             logger.error(traceback.format_exc())
-            system_message_widget = self.query_one("#system_messages", SystemMessageWidget)
-            await system_message_widget.add_message(f"❌ 任务执行出错: {e}", "error")
+            # 需要重新获取 widget 引用，因为在 except 中可能没有局部变量
+            if self.is_running:
+                try:
+                    sys_msg_w = self.query_one("#system_messages", SystemMessageWidget)
+                    self.call_from_thread(sys_msg_w.add_message, f"❌ 任务执行出错: {e}", "error")
+                except:
+                    pass
 
         finally:
             # 释放执行标志并重新启用输入框
             self._task_running = False
-            self._update_status_bar("空闲")
+            if self.is_running:
+                try:
+                    self.call_from_thread(self._update_status_bar, "空闲")
 
-            user_input_widget = self.query_one("#user_input", UserInputWidget)
-            user_input_widget.disabled = False
+                    def enable_input():
+                        try:
+                            ui_widget = self.query_one("#user_input", UserInputWidget)
+                            ui_widget.disabled = False
+                            input_area = ui_widget.query_one("#input_area", TextArea)
+                            input_area.focus()
+                        except Exception as e:
+                            logger.warning(f"⚠️ 无法重新聚焦: {e}")
 
-            # 重新聚焦输入框
-            try:
-                input_area = user_input_widget.query_one("#input_area", TextArea)
-                input_area.focus()
-            except Exception as e:
-                logger.warning(f"⚠️ 无法重新聚焦: {e}")
+                    self.call_from_thread(enable_input)
+                except RuntimeError:
+                    pass
 
     def action_clear(self):
         """清空所有内容"""

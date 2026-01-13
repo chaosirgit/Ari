@@ -1,3 +1,4 @@
+import asyncio
 import sys
 import base64
 import subprocess
@@ -85,9 +86,11 @@ class CodeBlockWithCopy(Container):
 
     def compose(self) -> ComposeResult:
         """构建UI"""
-        with Horizontal(classes="code-header"):
-            yield Static(f"📝 {self.language or 'code'}", classes="code-lang")
-            yield Button(label="[copy]", classes="copy-btn", variant="primary", compact=True, id=f"copy-{id(self)}")
+        header = Horizontal(classes="code-header")
+        yield header
+        
+        header.compose_add_child(Static(f"📝 {self.language or 'code'}", classes="code-lang"))
+        header.compose_add_child(Button(label="[copy]", classes="copy-btn", variant="primary", compact=True, id=f"copy-{id(self)}"))
 
         # 使用 Markdown 渲染代码（保持高亮）
         code_md = f"```{self.language}\n{self.code}\n```"
@@ -336,11 +339,13 @@ class MessageBlock(Container):
     def compose(self) -> ComposeResult:
         """构建UI"""
         # 消息头（发送者 + 复制按钮）
-        with Horizontal(classes="message-header"):
-            sender_text = f"{self.sender_name} ⚡" if self.is_streaming else self.sender_name
-            yield Static(sender_text, classes="message-sender")
-            yield Button(label="[copy]", classes="message-copy-btn", compact=True,
-                         id=f"msg-copy-{id(self)}")
+        # 使用显式构建而非上下文管理器，以避免在某些异步情况下的 Context 丢失问题
+        header = Horizontal(classes="message-header")
+        yield header
+        
+        sender_text = f"{self.sender_name} ⚡" if self.is_streaming else self.sender_name
+        header.compose_add_child(Static(sender_text, classes="message-sender"))
+        header.compose_add_child(Button(label="[copy]", classes="message-copy-btn", compact=True, id=f"msg-copy-{id(self)}"))
 
         # 消息内容
         if self.has_code:
@@ -433,8 +438,12 @@ class ChatWidget(Widget):
         super().__init__(**kwargs)
         self.stream_blocks = {}
         self.border_title = "💬 聊天区"
-        self._scroll_timer = None
+        self._scroll_task = None
         self._is_at_bottom = True
+
+    def on_unmount(self):
+        if self._scroll_task:
+            self._scroll_task.cancel()
 
     def compose(self) -> ComposeResult:
         """构建UI组件"""
@@ -448,17 +457,17 @@ class ChatWidget(Widget):
     async def add_message(self, msg: Msg, last: bool):
         """
         添加或更新消息显示（支持流式）
-
-        Args:
-            msg: AgentScope 消息对象
-            last: 是否是最后一条消息（True=完成，False=流式中）
         """
+        try:
+            scroll_container = self.query_one("#chat-scroll", VerticalScroll)
+        except Exception:
+            # 如果组件尚未挂载或已被卸载，直接忽略
+            return
+
         sender_name, display_text = self._parse_message(msg)
 
         if not sender_name or not display_text:
             return
-
-        scroll_container = self.query_one("#chat-scroll", VerticalScroll)
 
         msg_id = getattr(msg, 'id', None) or f"{sender_name}_{msg.timestamp if hasattr(msg, 'timestamp') else id(msg)}"
 
@@ -495,9 +504,18 @@ class ChatWidget(Widget):
 
     def _schedule_scroll(self):
         """延迟滚动（防抖）"""
-        if self._scroll_timer is not None:
-            self._scroll_timer.stop()
-        self._scroll_timer = self.set_timer(0.05, self._do_scroll)
+        if self._scroll_task:
+            self._scroll_task.cancel()
+        self._scroll_task = asyncio.create_task(self._do_scroll_delay())
+
+    async def _do_scroll_delay(self):
+        try:
+            await asyncio.sleep(0.05)
+            self._do_scroll()
+        except asyncio.CancelledError:
+            pass
+        finally:
+            self._scroll_task = None
 
     def _do_scroll(self):
         """执行滚动"""

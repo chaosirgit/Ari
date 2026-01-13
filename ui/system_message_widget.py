@@ -71,6 +71,8 @@ class SystemMessageWidget(VerticalScroll):
 
         # 自动滚动到底部
         self.scroll_end(animate=False)
+        # 再次确保渲染后滚动
+        self.call_after_refresh(self.scroll_end, animate=False)
 
     async def clear_messages(self):
         """清空所有系统消息"""

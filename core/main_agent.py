@@ -313,6 +313,7 @@ class MainReActAgent(MyBaseReActAgent):
         # 注册技能
         # Register the agent skill
         toolkit.register_agent_skill("./skill/agentscope")
+        toolkit.register_agent_skill("./skill/textual")
 
         # 注册创建子智能体工具
         toolkit.register_tool_function(create_worker)

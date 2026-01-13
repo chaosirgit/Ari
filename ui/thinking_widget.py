@@ -41,6 +41,12 @@ class ThinkingWidget(VerticalScroll):
         self._current_thinking = {}  # 记录当前正在构建的思考 {agent_name: {tool_name, tool_input, widget, completed}}
         self._clear_timers = {}  # 记录每个 Agent 的清空定时器 {agent_name: Task}
 
+    def on_unmount(self) -> None:
+        """组件卸载时清理资源"""
+        for task in self._clear_timers.values():
+            task.cancel()
+        self._clear_timers.clear()
+
     def compose(self):
         self._container = Vertical()
         yield self._container
@@ -135,6 +141,9 @@ class ThinkingWidget(VerticalScroll):
                 }
                 logger.debug(f"💭 添加思考: {agent_name} -> {tool_name}")
 
+            # 🚀 强制滚动到底部
+            self.scroll_end(animate=False)
+
         except Exception as e:
             logger.error(f"❌ 添加思考失败: {e}")
 
@@ -166,40 +175,52 @@ class ThinkingWidget(VerticalScroll):
             )
             current["widget"].update(formatted_text)
             logger.debug(f"✅ 标记 {agent_name} 思考完成")
+            
+            # 🚀 强制滚动
+            self.scroll_end(animate=False)
 
         # 🔥 创建新的清空定时器
-        async def delayed_clear():
+        async def _delayed_clear():
             try:
-                await asyncio.sleep(3)  # 延迟 3 秒
-                await self._clear_agent_thinking(agent_name)
+                await asyncio.sleep(3.0)
+                if agent_name in self._current_thinking:
+                    await self._clear_agent_thinking(agent_name)
             except asyncio.CancelledError:
                 logger.debug(f"⏸️ {agent_name} 的清空任务被取消")
+            except Exception as e:
+                logger.error(f"❌ 清空任务出错: {e}")
+            finally:
+                # 任务结束，从字典中移除（如果是自己结束的）
+                if agent_name in self._clear_timers and self._clear_timers[agent_name] == asyncio.current_task():
+                    del self._clear_timers[agent_name]
 
-        self._clear_timers[agent_name] = asyncio.create_task(delayed_clear())
-        logger.debug(f"⏰ 启动 {agent_name} 的 3 秒清空定时器")
+        self._clear_timers[agent_name] = asyncio.create_task(_delayed_clear())
+        logger.debug(f"⏰ 启动 {agent_name} 的 3 秒清空任务")
 
     async def _clear_agent_thinking(self, agent_name: str):
         """
         清空指定 Agent 的思考内容
-
-        Args:
-            agent_name: Agent 名称
         """
-        if agent_name in self._current_thinking:
-            widget = self._current_thinking[agent_name]["widget"]
-            await widget.remove()
-            del self._current_thinking[agent_name]
-            logger.info(f"🧹 清空 {agent_name} 的思考内容")
+        try:
+            if agent_name in self._current_thinking:
+                widget = self._current_thinking[agent_name]["widget"]
+                # 检查 widget 是否还挂载着
+                if widget.is_mounted:
+                    await widget.remove()
+                del self._current_thinking[agent_name]
+                logger.info(f"🧹 清空 {agent_name} 的思考内容")
 
-        # 清理定时器记录
-        if agent_name in self._clear_timers:
-            del self._clear_timers[agent_name]
+            # 强制滚动以更新布局
+            self.scroll_end(animate=False)
+            
+        except Exception as e:
+            logger.warning(f"⚠️ 清空思考内容时出错: {e}")
 
     async def clear_thinking(self):
         """清空所有思考记录"""
         # 🔥 取消所有定时器
-        for timer in self._clear_timers.values():
-            timer.cancel()
+        for task in self._clear_timers.values():
+            task.cancel()
         self._clear_timers.clear()
 
         if self._container:
