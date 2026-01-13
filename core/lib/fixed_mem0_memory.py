@@ -4,7 +4,7 @@
 from typing import Any, Optional, Union, List
 from agentscope.memory._mem0_long_term_memory import Mem0LongTermMemory
 from agentscope.message import Msg
-from core.lib.fixed_agentscope_embedding import FixedAgentScopeEmbedding
+from core.lib.fixed_agentscope_embedding import FixedEmbedderConfig
 
 
 class FixedMem0LongTermMemory(Mem0LongTermMemory):
@@ -56,7 +56,7 @@ class FixedMem0LongTermMemory(Mem0LongTermMemory):
             from mem0.utils.factory import EmbedderFactory
             
             # 创建修复版的嵌入器配置
-            fixed_embedder_config = EmbedderConfig(
+            fixed_embedder_config = FixedEmbedderConfig(
                 provider="agentscope_fixed",
                 config={"model": embedding_model},
             )
