@@ -437,7 +437,7 @@ class MessageStreamer:
                 self._task.cancel()
                 try:
                     # 🆕 添加超时等待，避免无限阻塞
-                    await asyncio.wait_for(self._task, timeout=2.0)
+                    await asyncio.wait_for(self._task, timeout=15.0)
                 except asyncio.TimeoutError:
                     logger.warning("任务取消超时，强制终止")
                 except asyncio.CancelledError:
@@ -584,7 +584,9 @@ async def main() -> None:
         # 执行对话（可能被中断）
         completed = await run_once(ari, user_text, token_counter)
 
-        # 无论是否被中断，都会另起一行继续等待输入
+        # 🆕 如果被中断，重置 session
+        if not completed:
+            session = make_prompt_session()
 
 
 if __name__ == "__main__":
