@@ -1,3 +1,4 @@
+from agentscope.message import TextBlock
 from agentscope.tool import ToolResponse, insert_text_file
 import os
 
@@ -69,11 +70,11 @@ async def ex_insert_text_file(
         
     except ValueError as e:
         return ToolResponse(
-            status="error",
-            content=f"Parameter error: {str(e)}"
+            metadata = {"status": "error"},
+            content = [TextBlock(type="text", text=f"Parameter error: {str(e)}")]
         )
     except Exception as e:
         return ToolResponse(
-            status="error",
-            content=f"Unexpected error during file insertion: {str(e)}"
+            metadata = {"status": "error"},
+            content = [TextBlock(type="text", text=f"Unexpected error during file insertion: {str(e)}")]
         )

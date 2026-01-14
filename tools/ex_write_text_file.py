@@ -1,3 +1,4 @@
+from agentscope.message import TextBlock
 from agentscope.tool import ToolResponse, write_text_file
 import json
 import os
@@ -76,6 +77,6 @@ async def ex_write_text_file(
         return result
     except Exception as e:
         return ToolResponse(
-            status="error",
-            content=f"Failed to write file '{file_path}': {str(e)}"
+            metadata={"status":"error"},
+            content=[TextBlock(type="text",text=f"Failed to write file '{file_path}': {str(e)}")]
         )

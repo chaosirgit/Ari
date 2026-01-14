@@ -37,6 +37,7 @@ from config import (
 from tools.ex_insert_text_file import ex_insert_text_file
 from tools.ex_view_text_file import ex_view_text_file
 from tools.ex_write_text_file import ex_write_text_file
+from tools.fetch_web_content import fetch_web_content
 
 
 class LongTermMemoryManager:
@@ -325,6 +326,8 @@ class MainReActAgent(MyBaseReActAgent):
         toolkit.register_tool_function(ex_write_text_file)
         toolkit.register_tool_function(ex_insert_text_file)
 
+        toolkit.register_tool_function(fetch_web_content)
+
         memory = InMemoryMemory()
 
         # 🔒 使用单例管理器获取长期记忆
@@ -387,5 +390,5 @@ class MainReActAgent(MyBaseReActAgent):
 
         # 将规划结果作为工具响应返回
         return ToolResponse(
-            content=[{"type": "text", "text": planning_content}],
+            content=[TextBlock(type="text",text=planning_content)],
         )

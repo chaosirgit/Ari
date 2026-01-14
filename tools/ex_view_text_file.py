@@ -1,3 +1,4 @@
+from agentscope.message import TextBlock
 from agentscope.tool import ToolResponse, view_text_file
 import json
 import re
@@ -77,8 +78,8 @@ async def ex_view_text_file(
         return result
     except ValueError as e:
         return ToolResponse(
-            status="error",
-            content=f"Invalid ranges parameter: {str(e)}"
+            metadata={"status":"error"},
+            content=[TextBlock(type="text",text=f"Invalid ranges parameter: {str(e)}")]
         )
     except Exception as e:
         # Let the original tool handle file-related errors
@@ -87,6 +88,6 @@ async def ex_view_text_file(
             return result
         except Exception:
             return ToolResponse(
-                status="error",
-                content=f"Error viewing file '{file_path}': {str(e)}"
+                metadata = {"status": "error"},
+                content = [TextBlock(type="text", text=f"Error viewing file '{file_path}': {str(e)}")]
             )

@@ -20,6 +20,8 @@ EMBEDDING_API_KEY = os.getenv("EMBEDDING_API_KEY")
 EMBEDDING_BASE_URL = os.getenv("EMBEDDING_BASE_URL")
 EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "text-embedding-3-small")
 EMBEDDING_DIMENSION = int(os.getenv("EMBEDDING_DIMENSION", "1536"))
+# 高德地图API配置
+AMAP_API_KEY = os.getenv("AMAP_API_KEY")
 
 MEMORY_PATH = os.getenv("MEMORY_PATH", "./memory/vector_store")
 EMBEDDING_CACHE_DIR = os.getenv("EMBEDDING_CACHE_DIR", "./memory/embedding_cache")
