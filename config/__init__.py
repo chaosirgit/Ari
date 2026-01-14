@@ -9,6 +9,8 @@ from config.config import (
     EMBEDDING_DIMENSION,
     EMBEDDING_MODEL_NAME,
     EMBEDDING_CACHE_DIR,
+    AMAP_API_KEY,
+    TAVILY_API_KEY,
     logger
 )
 
@@ -22,5 +24,8 @@ __all__ = [
     "MEMORY_PATH",
     "EMBEDDING_DIMENSION",
     "EMBEDDING_MODEL_NAME",
-    "EMBEDDING_CACHE_DIR"
+    "EMBEDDING_CACHE_DIR",
+    "AMAP_API_KEY",
+    "TAVILY_API_KEY",
+    "logger",
 ]

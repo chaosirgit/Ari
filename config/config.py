@@ -23,6 +23,9 @@ EMBEDDING_DIMENSION = int(os.getenv("EMBEDDING_DIMENSION", "1536"))
 # 高德地图API配置
 AMAP_API_KEY = os.getenv("AMAP_API_KEY")
 
+# 搜索
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
+
 MEMORY_PATH = os.getenv("MEMORY_PATH", "./memory/vector_store")
 EMBEDDING_CACHE_DIR = os.getenv("EMBEDDING_CACHE_DIR", "./memory/embedding_cache")
 

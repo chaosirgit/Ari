@@ -2,12 +2,9 @@ from agentscope.message import TextBlock
 from agentscope.tool import ToolResponse
 import requests
 from bs4 import BeautifulSoup
-import logging
+from config import logger
 from typing import Optional
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 def _fetch_web_content_sync(url: str, timeout: int = 10) -> str:
     """

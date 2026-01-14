@@ -10,13 +10,11 @@ from agentscope.model import OpenAIChatModel
 from agentscope.formatter import OpenAIChatFormatter
 from agentscope.tool import Toolkit, ToolResponse, execute_shell_command, execute_python_code
 from agentscope.memory import InMemoryMemory, Mem0LongTermMemory
-from core.lib.fixed_openai_embedding import FixedOpenAITextEmbedding
 from agentscope.embedding import OpenAITextEmbedding, FileEmbeddingCache
 from agentscope.message import Msg, TextBlock
 from mem0.vector_stores.configs import VectorStoreConfig
 from core.planning_agent import PlanningReActAgent
 from core.lib.my_base_agent_lib import MyBaseReActAgent
-from core.lib.fixed_mem0_memory import FixedMem0LongTermMemory
 
 # 导入协调者提供的 create_worker 工具
 from tools.create_worker import create_worker
@@ -38,6 +36,7 @@ from tools.ex_insert_text_file import ex_insert_text_file
 from tools.ex_view_text_file import ex_view_text_file
 from tools.ex_write_text_file import ex_write_text_file
 from tools.fetch_web_content import fetch_web_content
+from tools.tavily_search import tavily_search
 
 
 class LongTermMemoryManager:
@@ -327,6 +326,7 @@ class MainReActAgent(MyBaseReActAgent):
         toolkit.register_tool_function(ex_insert_text_file)
 
         toolkit.register_tool_function(fetch_web_content)
+        toolkit.register_tool_function(tavily_search)
 
         memory = InMemoryMemory()
 

@@ -12,6 +12,7 @@ dependencies = [
     "packaging>=25.0",
     "prompt-toolkit>=3.0.52",
     "pyperclip>=1.11.0",
+    "tavily-python>=0.7.17",
     "textual>=7.0.0",
 ]
 
