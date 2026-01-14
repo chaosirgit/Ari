@@ -14,6 +14,8 @@ from core.lib.my_base_agent_lib import MyBaseReActAgent
 from tools.ex_insert_text_file import ex_insert_text_file
 from tools.ex_view_text_file import ex_view_text_file
 from tools.ex_write_text_file import ex_write_text_file
+from tools.fetch_web_content import fetch_web_content
+from tools.tavily_search import tavily_search
 
 
 async def create_worker(
@@ -61,6 +63,9 @@ async def create_worker(
         toolkit.register_tool_function(ex_view_text_file)
         toolkit.register_tool_function(ex_write_text_file)
         toolkit.register_tool_function(ex_insert_text_file)
+
+        toolkit.register_tool_function(fetch_web_content)
+        toolkit.register_tool_function(tavily_search)
 
         worker = MyBaseReActAgent(
             name=f"Worker_{agent_name}-{task_id}",
